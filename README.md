@@ -35,6 +35,14 @@ Now start up JupyterLab in the container:
 
     docker --context ecsenv compose up
 
+Navigate to the [AWS Load Balancers](https://us-west-1.console.aws.amazon.com/ec2/v2/home?region=us-west-1#LoadBalancers:sort=loadBalancerName), select it and copy the URL next to "DNS name".
+
+![Load balancer](https://user-images.githubusercontent.com/2359002/140552327-3811492d-2ced-4168-9ef3-906cc9e2f618.png)
+
+Append port `:8787` to the URL, open it and you should see the JupyterLab start
+page. Copy and paste the Jupyter token from `compose.yaml` into the form and
+JupyterLab will start up.
+
 When finished, be sure to tear down the AWS resources to avoid further charges.
 
     docker --context ecsenv compose down
