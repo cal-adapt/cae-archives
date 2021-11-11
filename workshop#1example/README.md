@@ -1,4 +1,4 @@
-This file contains multiple versions of the same notebook, used at workshop #1 (_orig). 
+This directory contains multiple versions of the same notebook, used at workshop #1 (_orig). 
 
 The needed data for the visualizations is in this directory, so you can use the _local version without having to access raw data. 
 
