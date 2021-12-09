@@ -1,0 +1,153 @@
+#climakit temporary workaround
+import numpy as np
+import xarray as xy
+import pandas as pd
+import xesmf as xe
+import param
+import panel as pn
+import s3fs
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from cycler import cycler
+from itertools import cycle
+import geoviews as gv
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from shapely import geometry
+import holoviews as hv
+from holoviews import opts
+import hvplot.pandas
+import hvplot.xarray
+
+# Connect to AWS S3 storage
+fs = s3fs.S3FileSystem(anon=True)
+
+
+#constants
+cached_stations = ['','LAX','SFO','SAC','BAK','SDO']
+variable_choices = ['temperature','precipitation','10m winds','500mb height']
+scenario_choices = ['SSP 3-7.0 -- Business as Usual', 'SSP 5-8.5 -- Burn it All']
+warming_level_choices = ['2˚','3˚','4˚'] #DEGREES
+
+export_formats = ['NetCDF (.nc)','.csv']
+
+#=== Select ===================================
+class Selector(param.Parameterized): #these choices need to be known throughout this library -- one big class?
+    #LocationSelector may end up its own class to have lots more forms of selection
+    cached_station  = param.Selector(objects=cached_stations) 
+    variable = param.Selector(objects=variable_choices)
+    
+    def view(self):
+        if self.cached_station != '':
+            return self.cached_station
+        else:
+            return 'choose a pre-calculated location'
+    
+def select():
+    obj = Selector() 
+    warming_levels = pn.widgets.CheckBoxGroup(name='Warming Levels',options=warming_level_choices) 
+    scenario = pn.widgets.CheckBoxGroup(name='Scenarios',options=scenario_choices)
+    
+    return pn.Column(obj.param, pn.Row(warming_levels, scenario))
+
+#=== Generate ===================================
+def getGWL(smoothed,degrees):
+    #assumes smoothed *as scenario mean* is global:
+    GWL = smoothed.sub(degrees).abs().idxmin()
+    #make sure it's not just choosing one of the final timestamps just because it's the highest warming
+    #despite being nowhere close to (much less than) the target value:
+    for scenario in smoothed:
+        if smoothed[scenario].sub(degrees).abs().min() > 0.01:
+            GWL[scenario] = np.NaN
+    return GWL
+
+def getGWLone(timeseries,degrees):
+    #assumes smoothed *as scenario mean* is global:
+    GWL = timeseries.sub(degrees).abs().idxmin()
+    #make sure it's not just choosing one of the final timestamps just because it's the highest warming
+    #despite being nowhere close to (much less than) the target value:
+    for ensMem in timeseries:
+        if timeseries[ensMem].sub(degrees).abs().min() > 0.01:
+            GWL[ensMem] = np.NaN
+    return GWL
+
+def GWLguidelines(timeseries,warmingLevels):
+    linewidths = [0.3,0.6,1.1]
+    scenarioColors = ['b','r','orange','g'] #the color order they plot in...
+    tempList = []
+    for j, degrees in enumerate(warmingLevels):
+        lineHoriz = hv.Curve((timeseries.index,np.zeros(len(timeseries.index))+degrees))
+        lineHoriz = lineHoriz.opts(color='black',line_width=linewidths[j])
+        tempList.append(lineHoriz)
+        for i, scenario in enumerate(timeseries):
+            level = getGWL(timeseries,degrees)
+            temp = hv.Curve(([level[scenario] for k in np.arange(10)],np.linspace(0,degrees,10)))
+            temp = temp.opts(line_width=linewidths[j],color=scenarioColors[i])
+            tempList.append(temp)
+    return tempList
+                                                                                                        
+def generate():
+    dataOneModel = pd.read_csv('workshop#1example/timeSeries_tas_global.csv', header=[0,1], index_col=0)
+    return dataOneModel
+
+# === Visualize =============================
+def explore(dataOneModel):
+    scenarioMeans = dataOneModel.T.groupby(level='scenario').mean().T
+    anom = scenarioMeans - scenarioMeans['1850':'1980'].mean()
+    smoothed = anom.rolling(120,center=True).mean()['2000':] #defaults to window-size for min periods, and closed=right
+
+    dfPlot = smoothed.hvplot(label='Temperature') 
+    
+    warming = [2,3,4] #DEGREES
+    linewidths = [0.3,0.6,1.1]
+    scenarioColors = ['b','r','orange','g'] #the color order they plot in...
+    tempList = [dfPlot]
+    for j, degrees in enumerate(warming):
+        lineHoriz = hv.Curve((smoothed.index,np.zeros(len(smoothed.index))+degrees))
+        lineHoriz = lineHoriz.opts(color='black',line_width=linewidths[j])
+        tempList.append(lineHoriz)
+        for i, scenario in enumerate(smoothed):
+            level = getGWL(smoothed,degrees)
+            temp = hv.Curve(([level[scenario] for k in np.arange(10)],np.linspace(0,degrees,10)))
+            temp = temp.opts(line_width=linewidths[j],color=scenarioColors[i])
+            tempList.append(temp)
+    linePlot = hv.Overlay(tempList) 
+    return linePlot
+
+# === Transform ===============================
+class TransformSelector(param.Parameterized):
+    running_mean_window_months = param.Integer(default=12, bounds=(1, 360)) #months
+    
+    def view(self):
+        if self.date_range:
+            return 'Historical Reference Period:'+str(self.date_range)
+        else:
+            return 'Please enter a date range'
+    
+def transform():
+    obj = TransformSelector() 
+    date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1850,end=2015,value=(1980,2010),step=1)
+    return pn.Column(obj.param, date_range)
+
+# === Export =================================
+class ExportSelector(param.Parameterized):
+    format_choice  = param.Selector(objects=export_formats)
+    
+    def view(self):
+        if self.format_choice:
+            return self.format_choice
+        else:
+            return 'Please select a data output format.'
+    
+def export():
+    obj = ExportSelector() 
+    widget = pn.widgets.TextInput(name='Output File', value='filename')
+    button = pn.widgets.Button(name='Save')
+    return pn.Column(obj.param, widget, button)
+
+# to do:
+# -- button to download?
+# -- map-based location selection
+# -- dates in a range
+# -- check-box select multiple options
+# -- duplicate the demo-notebook to an ideas version, clean this one up, and check in
