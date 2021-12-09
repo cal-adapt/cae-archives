@@ -24,8 +24,9 @@ fs = s3fs.S3FileSystem(anon=True)
 
 
 #constants
-cached_stations = ['','LAX','SFO','SAC','BAK','SDO']
-variable_choices = ['temperature','precipitation','10m winds','500mb height']
+cached_stations = ['','BAKERSFIELD MEADOWS FIELD','BLYTHE ASOS','BURBANK-GLENDALE-PASADENA AIRPORT','LOS ANGELES DOWNTOWN USC CAMPUS','NEEDLES AIRPORT','FRESNO YOSEMITE INTERNATIONAL AIRPORT','IMPERIAL COUNTY AIRPORT','LAS VEGAS MCCARRAN INTERNATIONAL AP','LOS ANGELES INTERNATIONAL AIRPORT','LONG BEACH DAUGHERTY FIELD','MERCED MUNICIPAL AIRPORT','MODESTO CITY-COUNTY AIRPORT','SAN DIEGO MIRAMAR WSCMO','OAKLAND METRO INTERNATIONAL AIRPORT','OXNARD VENTURA COUNTY AIRPORT','PALM SPRINGS REGIONAL AIRPORT','RIVERSIDE MUNICIPAL AIRPORT','RED BLUFF MUNICIPAL AIRPORT','SACRAMENTO EXECUTIVE AIRPORT','SAN DIEGO LINDBERGH FIELD','SANTA BARBARA MUNICIPAL AIRPORT','SAN LUIS OBISPO AIRPORT','GILLESPIE FIELD','SAN FRANCISCO INTERNATIONAL AIRPORT','SAN JOSE INTERNATIONAL AIRPORT','SANTA ANA JOHN WAYNE AIRPORT','THERMAL / PALM SPRINGS','UKIAH MUNICIPAL AIRPORT','LANCASTER WILLIAM J FOX FIELD']
+variable_choices = ['2-m temperature','2-m specific humidity','Surface pressure','10m u-component of the wind','10m v-component of the wind','Snow water equivalent','Skin temperature','non-convective precipitation (accumulated)','convective precipitation (accumulated)','total precipitation','accumulated snowfall equivalent','diffuse downwelled solar radiation','surface upwelled solar radiation (all sky)','surface upwelled solar radiation (clear sky)','surface downwelled solar radiation (all sky)','surface downwelled solar radiation (clear sky)','Surface upwelled longwave radiation (all sky)','Surface upwelled longwave radiation (clear sky)','Surface downwelled longwave radiation (all sky)','Surface downwelled longwave radiation (clear sky)','Surface runoff','Sub-surface runoff']
+
 scenario_choices = ['SSP 3-7.0 -- Business as Usual', 'SSP 5-8.5 -- Burn it All']
 warming_level_choices = ['2˚','3˚','4˚'] #DEGREES
 
