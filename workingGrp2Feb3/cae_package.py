@@ -88,7 +88,7 @@ def setReturnPeriod():
 def setThreshold():
     obj = ThresholdSelector()
     new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['annual'])
-    threshold = pn.widgets.IntSlider(name='Threshold (Degrees F)',start=0,end=120,value=100)
+    threshold = pn.widgets.IntSlider(name='Threshold (Degrees F)',start=0,end=120,value=80)
     date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1850,end=2015,value=(1850,2015),step=1)
     return pn.Column(obj.param, new_temporal_resolution, threshold, pn.Row(date_range))
 
@@ -104,7 +104,7 @@ def getReturnValue(y,return_year=10):
     return_value = round(return_value, 5)
     return xr.DataArray(return_value)
 
-def getExceedance(y, exceedance=100):
+def getExceedance(y, exceedance=80):
     ams = y.groupby('time.year').max('time')
     paras = distr.gev.lmom_fit(ams)
     fitted_gev = distr.gev(**paras)
@@ -166,7 +166,7 @@ def getExceedancePlot(y):
                    fontsize='large',
                    labelpad=25,
                    rotation=270)
-    ax.set_title('Exceedance Probability of a 100 F Tempreature Event in 1850-2015',
+    ax.set_title('Exceedance Probability of a 80 F Tempreature Event in 1850-2015',
              fontsize='x-large')
 
     plt.show()
