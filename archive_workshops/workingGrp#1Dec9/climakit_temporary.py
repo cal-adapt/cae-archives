@@ -50,6 +50,10 @@ def select():
     dyn_stat = pn.widgets.CheckBoxGroup(name='Dynamical/Statistical',options=['Dynamical','Statistical'])
     return pn.Column(pn.Row(obj.param,dyn_stat), pn.Row(warming_levels, scenario))
 
+def pull_data():
+    df = xr.open_zarr('s3://cdcat/wrf/ucla/era5/historical/1hr/all/d02/')
+    return df
+
 #=== Generate ===================================                                                                                             
 def generate():
     dataOneModel = pd.read_csv('../workshop#1example/timeSeries_tas_global.csv', header=[0,1], index_col=0)
