@@ -48,7 +48,7 @@ export_formats = ['NetCDF (.nc)','.csv']
 class DataSelector(param.Parameterized): #these choices need to be known throughout this library -- one big class?
     #LocationSelector may end up its own class to have lots more forms of selection
     cached_station  = param.Selector(objects=cached_stations) 
-    timescale = param.Selector(objects=['hourly','daily'])
+    timescale = param.Selector(objects=['Hourly','Daily','Monthly'])
     variable = param.Selector(objects=variable_choices)
     def view(self):
         if self.cached_station != '':
@@ -65,11 +65,11 @@ def select():
 
 #=== Generate ===================================                                                                                             
 def generate():
-    ds = xr.open_dataset("tas_Amon_NorESM1-M_historical_r1i1p1_185001-200512.nc")
-    ds['tas'].data = ds['tas'].data - 273.15
-    ds['tas'].data = ds['tas'].data * (9/5) + 32
-    ds['tas'].attrs['units'] = 'F'
-    da = ds['tas']
+    ds = xr.open_dataset("ERA5-WRF_45km_monthly.nc")
+    ds['T2'].data = ds['T2'].data - 273.15
+    ds['T2'].data = ds['T2'].data * (9/5) + 32
+    ds['T2'].attrs['units'] = 'F'
+    da = ds['T2']
     return da
 
 # === Transform ===============================   
@@ -81,17 +81,20 @@ def setReturnPeriod():
     obj = ThresholdSelector()
     new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['Annual'])
     return_periods = pn.widgets.IntSlider(name='Return Period',start=2,end=1000,value=10)
-    date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1850,end=2015,value=(1850,2015),step=1)
+    date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1950,end=2021,value=(1950,2021),step=1)
     return pn.Column(obj.param, new_temporal_resolution, pn.Row(return_periods), pn.Row(date_range))
+
+def transform(da):
+    da1 = da.sel(time=slice("1950-01-01", "2000-01-01"))
+    da2 = da.sel(time=slice("1970-01-01", "2020-01-01"))
+    return da1, da2
 
 def setThreshold():
     obj = ThresholdSelector()
     new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['Annual'])
     threshold = pn.widgets.IntSlider(name='Threshold (Degrees F)',start=0,end=120,value=80)
-    date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1850,end=2015,value=(1850,2015),step=1)
-    return pn.Column(obj.param, new_temporal_resolution, threshold, pn.Row(date_range))
-
-# === Calculate ===============================   
+    date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1950,end=2021,value=(1950,2021),step=1)
+    return pn.Column(obj.param, new_temporal_resolution, threshold, pn.Row(date_range))  
 
 def getReturnValue(y,return_year=10):
     ams = y.groupby('time.year').max('time')
@@ -103,7 +106,7 @@ def getReturnValue(y,return_year=10):
     return xr.DataArray(return_value)
 
 def calculateReturnValue(da):
-    da_stacked = da.stack(allpoints=['lon','lat']).squeeze()
+    da_stacked = da.stack(allpoints=['x','y']).squeeze()
     da_stacked = da_stacked.groupby('allpoints')
     return_values = da_stacked.apply(getReturnValue)
     return_values = return_values.unstack('allpoints').transpose()
@@ -117,39 +120,54 @@ def getExceedance(y, exceedance=80):
     return xr.DataArray(exceedance_probability)
 
 def calculateExceedance(da):
-    da_stacked = da.stack(allpoints=['lon','lat']).squeeze()
+    da_stacked = da.stack(allpoints=['x','y']).squeeze()
     da_stacked = da_stacked.groupby('allpoints')
     return_values = da_stacked.apply(getExceedance)
     return_values = return_values.unstack('allpoints').transpose()
     return return_values
 
 #=== Visualize =============================
-def getReturnValuePlot(y):
-    fig = plt.figure(figsize=[10,5])
-    ax = plt.subplot(111,projection=ccrs.Orthographic(-112,42))
+def getReturnValuePlot(x, y):
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=[20,6], subplot_kw={"projection": ccrs.Orthographic(-112,42)})
+    fig.suptitle('Comparison Return Values of a 1 in 10 Year Temperature Event (F) Between 1950-1999 and 1970-2019 ', fontsize='x-large')
 
-    plotted_data = ax.pcolormesh(y.lon, y.lat, 
-                                 y,
+
+    cf1 = ax1.pcolormesh(x.lon, x.lat, 
+                                 x,
                                  transform=ccrs.PlateCarree(),
                                  cmap=cm.jet, vmin=40, vmax=100)
-
-    cbar = fig.colorbar(plotted_data)
-
-    ax.set_extent([-135,-93,25,55])
-    ax.coastlines() 
-    ax.gridlines()
-    ax.add_feature(cfeature.BORDERS)
-    ax.add_feature(cfeature.NaturalEarthFeature(category='cultural',
+    ax1.set_extent([-130,-100,28,50])
+    ax1.coastlines() 
+    ax1.gridlines()
+    ax1.add_feature(cfeature.BORDERS)
+    ax1.add_feature(cfeature.NaturalEarthFeature(category='cultural',
                                         name='admin_1_states_provinces_lines',
                                         scale='110m',facecolor='None'),
                    edgecolor='k')
-
-    cbar.ax.set_ylabel('Return Value of a 1 in 10 Year Event (F)',
-                       fontsize='large',
-                       labelpad=25,
-                       rotation=270)
-    ax.set_title('Return Values of a 1 in 10 Year Temperature Event (F) in 1850-2015',
+    ax1.set_title('1950-1999',
                  fontsize='x-large')
+
+
+    cf2 = ax2.pcolormesh(y.lon, y.lat, 
+                                 y,
+                                 transform=ccrs.PlateCarree(),
+                                 cmap=cm.jet, vmin=40, vmax=100)
+    ax2.set_extent([-130,-100,28,50])
+    ax2.coastlines() 
+    ax2.gridlines()
+    ax2.add_feature(cfeature.BORDERS)
+    ax2.add_feature(cfeature.NaturalEarthFeature(category='cultural',
+                                        name='admin_1_states_provinces_lines',
+                                        scale='110m',facecolor='None'),
+                   edgecolor='k')
+    ax2.set_title('1970-2019',
+                 fontsize='x-large')
+
+
+    fig.subplots_adjust(bottom=0.25, wspace=-0.5)
+    cbar_ax = fig.add_axes([0.22, 0.2, 0.6, 0.02])
+    cbar=fig.colorbar(cf2, cax=cbar_ax, orientation='horizontal')
+    cbar.ax.set_xlabel('Return Value of a 1 in 10 Year Event (F)', fontsize='large')
 
     plt.show()
 
@@ -164,7 +182,7 @@ def getExceedancePlot(y):
 
     cbar = fig.colorbar(plotted_data)
 
-    ax.set_extent([-135,-93,25,55])
+    ax.set_extent([-130,-100,28,50])
     ax.coastlines() 
     ax.gridlines()
     ax.add_feature(cfeature.BORDERS)
@@ -177,7 +195,7 @@ def getExceedancePlot(y):
                    fontsize='large',
                    labelpad=25,
                    rotation=270)
-    ax.set_title('Exceedance Probability of a 80 F Temperature Event in 1850-2015',
+    ax.set_title('Exceedance Probability of a 80 F Temperature Event in 1950-2021',
              fontsize='x-large')
 
     plt.show()
