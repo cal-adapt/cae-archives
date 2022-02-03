@@ -85,8 +85,8 @@ def setReturnPeriod():
     return pn.Column(obj.param, new_temporal_resolution, pn.Row(return_periods), pn.Row(date_range))
 
 def transform(da):
-    da1 = da.sel(time=slice("1950-01-01", "2000-01-01"))
-    da2 = da.sel(time=slice("1970-01-01", "2020-01-01"))
+    da1 = da.sel(time=slice("1950-01-01", "1985-01-01"))
+    da2 = da.sel(time=slice("1985-01-01", "2020-01-01"))
     return da1, da2
 
 def setThreshold():
@@ -129,13 +129,13 @@ def calculateExceedance(da):
 #=== Visualize =============================
 def getReturnValuePlot(x, y):
     fig, (ax1, ax2) = plt.subplots(1,2, figsize=[20,6], subplot_kw={"projection": ccrs.Orthographic(-112,42)})
-    fig.suptitle('Comparison Return Values of a 1 in 10 Year Temperature Event (F) Between 1950-1999 and 1970-2019 ', fontsize='x-large')
+    fig.suptitle('Comparison Return Values of a 1 in 10 Year Temperature Event (F) Between 1950-1985 and 1985-2020 ', fontsize='x-large')
 
 
     cf1 = ax1.pcolormesh(x.lon, x.lat, 
                                  x,
                                  transform=ccrs.PlateCarree(),
-                                 cmap=cm.jet, vmin=40, vmax=100)
+                                 cmap=cm.seismic, vmin=40, vmax=100)
     ax1.set_extent([-130,-100,28,50])
     ax1.coastlines() 
     ax1.gridlines()
@@ -144,14 +144,14 @@ def getReturnValuePlot(x, y):
                                         name='admin_1_states_provinces_lines',
                                         scale='110m',facecolor='None'),
                    edgecolor='k')
-    ax1.set_title('1950-1999',
+    ax1.set_title('1950-1985',
                  fontsize='x-large')
 
 
     cf2 = ax2.pcolormesh(y.lon, y.lat, 
                                  y,
                                  transform=ccrs.PlateCarree(),
-                                 cmap=cm.jet, vmin=40, vmax=100)
+                                 cmap=cm.seismic, vmin=40, vmax=100)
     ax2.set_extent([-130,-100,28,50])
     ax2.coastlines() 
     ax2.gridlines()
@@ -160,7 +160,7 @@ def getReturnValuePlot(x, y):
                                         name='admin_1_states_provinces_lines',
                                         scale='110m',facecolor='None'),
                    edgecolor='k')
-    ax2.set_title('1970-2019',
+    ax2.set_title('1985-2020',
                  fontsize='x-large')
 
 
@@ -178,7 +178,7 @@ def getExceedancePlot(y):
     plotted_data = ax.pcolormesh(y.lon, y.lat,
                              y,
                              transform=ccrs.PlateCarree(),
-                             cmap=cm.jet)
+                             cmap=cm.Reds)
 
     cbar = fig.colorbar(plotted_data)
 
