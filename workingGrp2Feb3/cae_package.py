@@ -79,15 +79,14 @@ class ThresholdSelector(param.Parameterized):
 
 def setReturnPeriod():
     obj = ThresholdSelector()
-    new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['annual'])
-    return_periods = pn.widgets.RadioButtonGroup(name='Return Period(s)',
-                                                          options=['2 years','5 years','10 years','20 years','50 years','100 years','200 years','500 years','1000 years'])
+    new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['Annual'])
+    return_periods = pn.widgets.IntSlider(name='Return Period',start=2,end=1000,value=10)
     date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1850,end=2015,value=(1850,2015),step=1)
-    return pn.Column(obj.param, new_temporal_resolution, return_periods, pn.Row(date_range))
+    return pn.Column(obj.param, new_temporal_resolution, pn.Row(return_periods), pn.Row(date_range))
 
 def setThreshold():
     obj = ThresholdSelector()
-    new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['annual'])
+    new_temporal_resolution = pn.widgets.RadioButtonGroup(name='New Temporal Resolution',options=['Annual'])
     threshold = pn.widgets.IntSlider(name='Threshold (Degrees F)',start=0,end=120,value=80)
     date_range  = pn.widgets.IntRangeSlider(name='Reference Period Years',start=1850,end=2015,value=(1850,2015),step=1)
     return pn.Column(obj.param, new_temporal_resolution, threshold, pn.Row(date_range))
@@ -99,18 +98,30 @@ def getReturnValue(y,return_year=10):
     paras = distr.gev.lmom_fit(ams)
     fitted_gev = distr.gev(**paras)
     return_period = 1.0-(1./return_year)
-    
     return_value = fitted_gev.ppf(return_period)
     return_value = round(return_value, 5)
     return xr.DataArray(return_value)
+
+def calculateReturnValue(da):
+    da_stacked = da.stack(allpoints=['lon','lat']).squeeze()
+    da_stacked = da_stacked.groupby('allpoints')
+    return_values = da_stacked.apply(getReturnValue)
+    return_values = return_values.unstack('allpoints').transpose()
+    return return_values
 
 def getExceedance(y, exceedance=80):
     ams = y.groupby('time.year').max('time')
     paras = distr.gev.lmom_fit(ams)
     fitted_gev = distr.gev(**paras)
-    
     exceedance_probability = 1-(fitted_gev.cdf(exceedance))
     return xr.DataArray(exceedance_probability)
+
+def calculateExceedance(da):
+    da_stacked = da.stack(allpoints=['lon','lat']).squeeze()
+    da_stacked = da_stacked.groupby('allpoints')
+    return_values = da_stacked.apply(getExceedance)
+    return_values = return_values.unstack('allpoints').transpose()
+    return return_values
 
 #=== Visualize =============================
 def getReturnValuePlot(y):
@@ -137,7 +148,7 @@ def getReturnValuePlot(y):
                        fontsize='large',
                        labelpad=25,
                        rotation=270)
-    ax.set_title('Return Values (F) of a 1 in 10 Year Tempreature Event in 1850-2015',
+    ax.set_title('Return Values of a 1 in 10 Year Temperature Event (F) in 1850-2015',
                  fontsize='x-large')
 
     plt.show()
@@ -166,7 +177,7 @@ def getExceedancePlot(y):
                    fontsize='large',
                    labelpad=25,
                    rotation=270)
-    ax.set_title('Exceedance Probability of a 80 F Tempreature Event in 1850-2015',
+    ax.set_title('Exceedance Probability of a 80 F Temperature Event in 1850-2015',
              fontsize='x-large')
 
     plt.show()
