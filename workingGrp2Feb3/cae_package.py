@@ -135,7 +135,7 @@ def getReturnValuePlot(x, y):
     cf1 = ax1.pcolormesh(x.lon, x.lat, 
                                  x,
                                  transform=ccrs.PlateCarree(),
-                                 cmap=cm.seismic, vmin=40, vmax=100)
+                                 cmap=cm.OrRd, vmin=40, vmax=100)
     ax1.set_extent([-130,-100,28,50])
     ax1.coastlines() 
     ax1.gridlines()
@@ -151,7 +151,7 @@ def getReturnValuePlot(x, y):
     cf2 = ax2.pcolormesh(y.lon, y.lat, 
                                  y,
                                  transform=ccrs.PlateCarree(),
-                                 cmap=cm.seismic, vmin=40, vmax=100)
+                                 cmap=cm.OrRd, vmin=40, vmax=100)
     ax2.set_extent([-130,-100,28,50])
     ax2.coastlines() 
     ax2.gridlines()
@@ -168,6 +168,8 @@ def getReturnValuePlot(x, y):
     cbar_ax = fig.add_axes([0.22, 0.2, 0.6, 0.02])
     cbar=fig.colorbar(cf2, cax=cbar_ax, orientation='horizontal')
     cbar.ax.set_xlabel('Return Value of a 1 in 10 Year Event (F)', fontsize='large')
+    
+    plt.savefig('returnValuePlot.png', bbox_inches='tight')
 
     plt.show()
 
@@ -197,7 +199,7 @@ def getExceedancePlot(y):
                    rotation=270)
     ax.set_title('Exceedance Probability of a 80 F Temperature Event in 1950-2021',
              fontsize='x-large')
-
+    plt.savefig('exceedancePlot.png', bbox_inches='tight')
     plt.show()
 
 
