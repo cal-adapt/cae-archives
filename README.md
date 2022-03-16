@@ -1,5 +1,8 @@
-Caladapt Analytics Engine Notebooks
+Cal-Adapt Analytics Engine Examples
 ===================================
+
+This repo mainly serves as a staging ground for project examples and development
+of production notebooks which end up in [cae-notebooks](https://github.com/cal-adapt/cae-notebooks).
 
 Installation
 ------------
