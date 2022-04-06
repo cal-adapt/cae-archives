@@ -592,3 +592,271 @@ def get_return_period(ams, return_value, distr="gev", multiple_points=True):
 
 
 #####################################################################
+
+def bootstrap(ams, distr='gev', data_variable='return_value', arg_value=10):
+    
+    distrs = ['gev', 'gumbel', 'weibull', 'pearson3', 'genpareto']
+    if distr not in distrs:
+        raise ValueError("invalid distr type. expected one of the following: %s" % distrs)
+        
+    data_variables = ['return_value', 'return_prob', 'return_period']
+    if data_variable not in data_variables:
+        raise ValueError("invalid data variable type. expected one of the following: %s" % data_variables)
+    
+    sample_size = len(ams)
+    new_ams = np.random.choice(ams, size=sample_size, replace=True)
+    
+    if distr == 'gev':
+        try:
+            lmoments = ldistr.gev.lmom_fit(new_ams)
+            fitted_distr = stats.genextreme(**lmoments)
+            
+            if data_variable == 'return_value':
+                return_event = 1.0-(1./arg_value)
+                return_value = fitted_distr.ppf(return_event)
+                result = round(return_value, 5)
+                    
+            elif data_variable == 'return_prob':
+                result = 1-(fitted_distr.cdf(arg_value))
+                
+            elif data_variable == 'return_period':
+                return_prob = fitted_distr.cdf(arg_value)
+                if return_prob == 1.0:
+                    result = np.nan
+                else:
+                    return_period = -1.0/(return_prob-1.0)
+                    result = round(return_period, 3)
+                    
+        except ValueError:
+            result = np.nan
+
+    if distr == 'gumbel':
+        try:
+            lmoments = ldistr.gum.lmom_fit(new_ams)
+            fitted_distr = stats.gumbel_r(**lmoments)
+            
+            if data_variable == 'return_value':
+                return_event = 1.0-(1./arg_value)
+                return_value = fitted_distr.ppf(return_event)
+                result = round(return_value, 5)
+                    
+            elif data_variable == 'return_prob':
+                result = 1-(fitted_distr.cdf(arg_value))
+                
+            elif data_variable == 'return_period':
+                return_prob = fitted_distr.cdf(arg_value)
+                if return_prob == 1.0:
+                    result = np.nan
+                else:
+                    return_period = -1.0/(return_prob-1.0)
+                    result = round(return_period, 3)
+                    
+        except ValueError:
+            result = np.nan
+
+    if distr == 'weibull':
+        try:
+            lmoments = ldistr.wei.lmom_fit(new_ams)
+            fitted_distr = stats.weibull_min(**lmoments)
+            
+            if data_variable == 'return_value':
+                return_event = 1.0-(1./arg_value)
+                return_value = fitted_distr.ppf(return_event)
+                result = round(return_value, 5)
+                    
+            elif data_variable == 'return_prob':
+                result = 1-(fitted_distr.cdf(arg_value))
+                
+            elif data_variable == 'return_period':
+                return_prob = fitted_distr.cdf(arg_value)
+                if return_prob == 1.0:
+                    result = np.nan
+                else:
+                    return_period = -1.0/(return_prob-1.0)
+                    result = round(return_period, 3)
+                    
+        except ValueError:
+            result = np.nan
+
+    if distr == 'pearson3':
+        try:
+            lmoments = ldistr.pe3.lmom_fit(new_ams)
+            fitted_distr = stats.pearson3(**lmoments)
+            
+            if data_variable == 'return_value':
+                return_event = 1.0-(1./arg_value)
+                return_value = fitted_distr.ppf(return_event)
+                result = round(return_value, 5)
+                    
+            elif data_variable == 'return_prob':
+                result = 1-(fitted_distr.cdf(arg_value))
+                
+            elif data_variable == 'return_period':
+                return_prob = fitted_distr.cdf(arg_value)
+                if return_prob == 1.0:
+                    result = np.nan
+                else:
+                    return_period = -1.0/(return_prob-1.0)
+                    result = round(return_period, 3)
+                    
+        except ValueError:
+            result = np.nan
+
+    if distr == 'genpareto':
+        try:
+            lmoments = ldistr.gpa.lmom_fit(new_ams)
+            fitted_distr = stats.genpareto(**lmoments)
+            
+            if data_variable == 'return_value':
+                return_event = 1.0-(1./arg_value)
+                return_value = fitted_distr.ppf(return_event)
+                result = round(return_value, 5)
+                    
+            elif data_variable == 'return_prob':
+                result = 1-(fitted_distr.cdf(arg_value))
+                
+            elif data_variable == 'return_period':
+                return_prob = fitted_distr.cdf(arg_value)
+                if return_prob == 1.0:
+                    result = np.nan
+                else:
+                    return_period = -1.0/(return_prob-1.0)
+                    result = round(return_period, 3)
+                    
+        except ValueError:
+            result = np.nan
+    
+    return result
+
+#####################################################################
+
+def get_return_value(ams, return_period=10, distr='gev', 
+                     multiple_points=True, bootstrap_runs=1000,
+                    conf_int_lower_bound=2.5, conf_int_upper_bound=97.5):
+    
+    distrs = ['gev', 'gumbel', 'weibull', 'pearson3', 'genpareto']
+    if distr not in distrs:
+        raise ValueError("invalid distr type. expected one of the following: %s" % distrs)
+        
+    ams_attributes = ams.attrs
+    
+    
+    if multiple_points == True:
+        ams = ams.stack(allpoints=['x','y']).squeeze().groupby('allpoints')
+    
+    def apply_function(ams):
+    
+        def function(ams):
+            
+            if distr == 'gev':
+                try:
+                    lmoments = ldistr.gev.lmom_fit(ams)
+                    fitted_distr = stats.genextreme(**lmoments)
+                    return_event = 1.0-(1./return_period)
+                    return_value = fitted_distr.ppf(return_event)
+                    return_value = round(return_value, 5)
+                except ValueError:
+                    return_value = np.nan
+                    
+                bootstrap_values = []
+                data_variable = 'return_value'
+                for _ in range(bootstrap_runs):
+                    result = bootstrap(ams, distr=distr, data_variable='return_value', arg_value=return_period)
+                    bootstrap_values.append(result)
+                conf_int_array = np.percentile(bootstrap_values, [conf_int_lower_bound, 
+                                                            conf_int_upper_bound])
+                conf_int = tuple(conf_int_array)
+                
+            if distr == 'gumbel':
+                try:
+                    lmoments = ldistr.gum.lmom_fit(ams)
+                    fitted_distr = stats.gumbel_r(**lmoments)
+                    return_event = 1.0-(1./return_period)
+                    return_value = fitted_distr.ppf(return_event)
+                    return_value = round(return_value, 5)
+                except ValueError:
+                    return_value = np.nan
+                
+                bootstrap_values = []
+                data_variable = 'return_value'
+                for _ in range(bootstrap_runs):
+                    result = bootstrap(ams, distr=distr, data_variable='return_value', arg_value=return_period)
+                    bootstrap_values.append(result)
+                conf_int_array = np.percentile(bootstrap_values, [conf_int_lower_bound, 
+                                                            conf_int_upper_bound])
+                conf_int = tuple(conf_int_array)
+                
+            if distr == 'weibull':
+                try:
+                    lmoments = ldistr.wei.lmom_fit(ams)
+                    fitted_distr = stats.weibull_min(**lmoments)
+                    return_event = 1.0-(1./return_period)
+                    return_value = fitted_distr.ppf(return_event)
+                    return_value = round(return_value, 5)
+                except ValueError:
+                    return_value = np.nan
+                bootstrap_values = []
+                data_variable = 'return_value'
+                for _ in range(bootstrap_runs):
+                    result = bootstrap(ams, distr=distr, data_variable='return_value', arg_value=return_period)
+                    bootstrap_values.append(result)
+                conf_int_array = np.percentile(bootstrap_values, [conf_int_lower_bound, 
+                                                            conf_int_upper_bound])
+                conf_int = tuple(conf_int_array)
+                
+            if distr == 'pearson3':
+                try:
+                    lmoments = ldistr.pe3.lmom_fit(ams)
+                    fitted_distr = stats.pearson3(**lmoments)
+                    return_event = 1.0-(1./return_period)
+                    return_value = fitted_distr.ppf(return_event)
+                    return_value = round(return_value, 5)
+                except ValueError:
+                    return_value = np.nan
+                bootstrap_values = []
+                data_variable = 'return_value'
+                for _ in range(bootstrap_runs):
+                    result = bootstrap(ams, distr=distr, data_variable='return_value', arg_value=return_period)
+                    bootstrap_values.append(result)
+                conf_int_array = np.percentile(bootstrap_values, [conf_int_lower_bound, 
+                                                            conf_int_upper_bound])
+                conf_int = tuple(conf_int_array)
+            
+            if distr == 'genpareto':
+                try:
+                    lmoments = ldistr.gpa.lmom_fit(ams)
+                    fitted_distr = stats.genpareto(**lmoments)
+                    return_event = 1.0-(1./return_period)
+                    return_value = fitted_distr.ppf(return_event)
+                    return_value = round(return_value, 5)
+                except ValueError:
+                    return_value = np.nan
+                bootstrap_values = []
+                data_variable = 'return_value'
+                for _ in range(bootstrap_runs):
+                    result = bootstrap(ams, distr=distr, data_variable='return_value', arg_value=return_period)
+                    bootstrap_values.append(result)
+                conf_int_array = np.percentile(bootstrap_values, [conf_int_lower_bound, 
+                                                            conf_int_upper_bound])
+                conf_int = tuple(conf_int_array)
+
+            return return_value, conf_int
+    
+        return xr.apply_ufunc(function, ams, input_core_dims=[["time"]], 
+                          exclude_dims=set(("time",)), output_core_dims=[[],[]])
+    
+    return_value, conf_int = apply_function(ams)
+    
+    return_value = return_value.rename('return_value')
+    new_ds = return_value.to_dataset()
+    new_ds['conf_int'] = conf_int
+    
+    if multiple_points == True:
+        new_ds = new_ds.unstack('allpoints')
+        
+    new_ds['return_value'].attrs['return period'] = '1 in {} year event'.format(str(return_period))
+    new_ds['conf_int'].attrs['confidence interval bounds'] = '({}th percentile, {}th percentile)'.format(str(conf_int_lower_bound), str(conf_int_upper_bound))
+    new_ds.attrs = ams_attributes
+    new_ds.attrs['distribution'] = '{}'.format(str(distr))
+    
+    return new_ds
