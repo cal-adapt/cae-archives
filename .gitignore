@@ -8,3 +8,7 @@
 .pyc
 .DS_Store
 __pycache__
+
+# ignore figures
+*.html
+*.png
