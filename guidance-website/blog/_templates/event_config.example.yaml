@@ -1,0 +1,49 @@
+# Worked example: reconstructs the Sacramento / August-September 2020 heat wave
+# analysis (cae-archives/guidance-website/blog/2026-08-13-sac-extreme-heat/).
+#
+# To start a new post: copy this file to a new post folder as `event_config.yaml`
+# and edit every value below for your location/event. Any file this config points
+# to (zip_shapefile, crai.dir contents) must also live in that folder.
+
+event_name: "Sacramento 2020"
+
+location:
+  network_id: "ASOSAWOS"
+  station_id: "ASOSAWOS_72483023232"
+  station_label: "KSAC"          # short label used in plot titles
+  place_name: "Sacramento"       # prose label used in plot titles
+  clip: "Sacramento County"      # WRF query clip region
+
+event:
+  year: 2020
+  heatwave_windows:              # list of [start, end] date strings, any number of windows
+    - ["2020-08-14", "2020-08-26"]
+    - ["2020-09-05", "2020-09-08"]
+  exclude_years: [2021, 2022]    # years dropped from the historical background series
+
+thresholds:
+  tmax_f: 105
+  tmin_f: 75
+
+projection:
+  warming_levels: [0.8, 1.5, 2.0]
+  warming_level_window: 15
+  baseline_warming_level: 0.8
+  percentile: 0.999               # single source of truth for the calibration percentile
+  window_years: 30
+  # sublabels: ["Historical", "Today", "Mid-Century"]   # optional; defaults to the °C labels
+
+# Part 4 (CRAI choropleth maps) only. These CSVs are pre-generated externally per
+# location — this notebook does not regenerate them. Point these at matching files
+# for your location, or delete/ignore Part 4 in the notebook if you don't have them.
+crai:
+  zip_shapefile: "sac_zipcodes.zip"
+  dir: "RECENT-HAZARDS_crai_layers_extreme_heat_sacramento"
+  file_slug: "sacramento"          # matches the "_sacramento_" substring in raw_counts filenames
+  county_fips: "067"
+  state_fips: "06"                 # California; override for other states
+  gwl_order: ["gwl08", "gwl15", "gwl2"]
+  gwl_labels:
+    gwl08: "Historical (0.8°C)"
+    gwl15: "Today (1.5°C)"
+    gwl2: "Mid-Century (2.0°C)"
