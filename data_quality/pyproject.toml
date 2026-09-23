@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-audit"
+version = "0.1.0"
+description = "Documentation-compliance audit for the Cal-Adapt: Analytics Engine cadcat archive (WRF and LOCA2)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "BSD-3-Clause" }
+
+# The catalog audit runs on these alone, from the snapshot bundled inside
+# climakitae. Reading the published stores needs the `stores` extra.
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "xarray>=2023.1",
+    "climakitae",
+]
+
+[project.optional-dependencies]
+# Opening Zarr stores directly from s3://cadcat. Needed for every stage past
+# the catalog audit.
+stores = ["s3fs", "zarr", "dask[array]"]
+
+# Sharper unit comparison: dimensional analysis rather than a string match.
+units = ["pint"]
+
+parquet = ["pyarrow"]
+dev = ["pytest>=7", "mypy", "ruff"]
+all = ["data-audit[stores,units,parquet,dev]"]
+
+[project.scripts]
+data-audit = "data_audit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["data_audit*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+filterwarnings = ["ignore::UserWarning"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py310"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "D"]
+ignore = ["D203", "D213", "E501"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+"notebooks/*" = ["D", "E", "F"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["data_audit"]
+mypy_path = "src"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = false
