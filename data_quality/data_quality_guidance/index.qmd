@@ -1,0 +1,115 @@
+---
+title: "AE Data Quality Guidance"
+subtitle: "What the Cal-Adapt downscaled data is, how good it is, and what it can be used for"
+date: last-modified
+---
+
+This site characterizes the Cal-Adapt Analytics Engine downscaled climate data —
+**WRF** (dynamical) and **LOCA2** (statistical/hybrid) — variable by variable, and
+states plainly what each is good for.
+
+It is produced by the **Data Quality & Documentation Pillar**, and its guiding
+principle is:
+
+::: {.callout-note appearance="simple"}
+**Document, don't fix.** This pillar characterizes the data and discloses what is
+known. Where a question is open, the deliverable is a clear statement of the issue
+and its likely cause — *not* its resolution.
+:::
+
+---
+
+## Variables covered
+
+| variable | status | headline |
+|---|---|---|
+| [**Wind speed**](variables/wind-speed.qmd) | complete, in review | Unbiased at well-sited stations; distribution too narrow, so **power density is under-predicted by 13–19 %** and high-wind days by a factor of four |
+| [**Relative humidity**](variables/relative-humidity.qmd) | complete | **The verdict splits by product.** WRF-ERA5 is usable for fire weather; LOCA2 finds a third of the critical days and no simple correction repairs it |
+
+Temperature, precipitation and snow are candidates for the next pass.
+
+Alongside the variables, the [catalog audit](guidance/catalog-audit.qmd)
+characterizes the archive's **metadata**: 1,961 findings across 390 datasets,
+**276 of them errors**, and two codes on WRF's wind components account for 208.
+
+---
+
+## How to use this site
+
+**If you want a verdict for your use case** → the
+[good/bad matrix](guidance/good-bad-matrix.qmd). Good-for, use-with-caution, or
+not-recommended, per variable × use case, with the evidence behind each.
+
+**If you have a variable name in hand and want to know what it is** → the
+[variable cards](guidance/variable-cards.qmd). One card per variable: definition,
+source, transformations, known issues.
+
+**If you want to know what happened to the number before it reached you** → the
+[provenance flowchart](method/provenance.qmd). The plain-language path from global
+model to delivered value, with the known gaps marked.
+
+**If you want to know whether the catalog itself is sound** → the
+[catalog audit](guidance/catalog-audit.qmd). Metadata quality across the whole
+`cadcat` archive, checked through two independent access paths — because a
+requirement can fail in the published store and pass in what users receive, or
+the reverse.
+
+**If you want the evidence** → the per-variable characterization pages linked
+above, and the [references](references.qmd).
+
+---
+
+## The method in one page
+
+Every variable is characterized the same way, so results are comparable across
+variables and the work is repeatable. Full detail in
+[Scope & Definitions](method/scope-and-definitions.qmd).
+
+### Six quality dimensions
+
+Each variable is scored on all six, against the reference that can actually
+adjudicate it:
+
+1. **Mean bias** — is the level right?
+2. **Spatial pattern fidelity** — are the maxima in the right places?
+3. **Response to terrain** — does the product resolve what its resolution implies?
+4. **Diurnal and seasonal structure** — is the timing right?
+5. **Extremes and distribution shape** — is the *shape* right, not just the mean?
+6. **Inter-variable consistency** — is it coherent with the other variables an
+   index needs?
+
+### Three references, ordered by what each can settle
+
+| tier | answers | cannot answer |
+|---|---|---|
+| **point observations** | Is the product right where we measured? | ocean, unobstructed high terrain |
+| **independent fine-scale model** | Do independent models agree with each other? | whether either is right |
+| **reanalysis** | Where and when do coarse and fine fields diverge? | which one is correct |
+
+::: {.callout-important appearance="simple"}
+**Observations first, reanalysis last.** A ratio against a coarse reanalysis
+measures a *distance*, not an error. Leading with it invites reading a resolution
+difference as a defect — which is exactly what an earlier version of the wind
+analysis did, attributing a 30 % offset to bias correction when it was resolution.
+:::
+
+### The finding that recurs
+
+**Both variables so far pass on level and fail on shape.** Products look correct
+on the mean — the number most often reported — and their distributions are too
+narrow, which is what downstream users actually depend on.
+
+That is why every characterization here includes a quantile comparison and a
+threshold sweep, not just a bias.
+
+---
+
+## Definition of done, per variable
+
+A variable is complete when all of the following exist and were produced through
+the template: lit-review rows; a provenance flowchart; a characterization page
+covering the six dimensions; matrix rows, filled and IOU-vetted; and a variable
+card. Then the template is stamped onto the next variable.
+
+*Source of record for evidence IDs (R##/Q##/DQ##) is the internal lit-review
+database — see [References](references.qmd).*

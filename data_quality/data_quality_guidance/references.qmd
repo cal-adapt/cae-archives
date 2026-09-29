@@ -1,0 +1,124 @@
+---
+title: "References"
+subtitle: "Lit-review sources (R##, Q##) and open questions (DQ##) behind every evidence ID"
+date: last-modified
+---
+
+Every `R##` / `Q##` / `DQ##` citation used across this site is exported from the internal
+lit-review database (`lit_review` and `open_questions` tabs). Edit the source spreadsheet and
+re-export `data/lit_review.csv` / `data/open_questions.csv` to update this page — it does not
+call out to the sheet live.
+
+::: {.callout-note appearance="simple"}
+Click any `R##` / `Q##` / `DQ##` mention elsewhere on this site to jump straight to its entry
+below.
+:::
+
+```{python}
+import pandas as pd
+import re
+
+lit = pd.read_csv("data/lit_review.csv").fillna("")
+oq = pd.read_csv("data/open_questions.csv").fillna("")
+
+valid_ids = set(lit["ID"]) | set(oq["DQ ID"])
+id_pattern = re.compile(r"\b(?:DQ|R|Q)\d+\b")
+
+def linkify(text):
+    """Turn any R##/Q##/DQ## mention in free text into a same-page anchor link."""
+    if not text:
+        return text
+    return id_pattern.sub(
+        lambda m: f"[{m.group(0)}](#{m.group(0)})" if m.group(0) in valid_ids else m.group(0),
+        str(text),
+    )
+```
+
+## Quick reference
+
+### Lit-review sources (R##, Q##)
+
+```{python}
+lit[["ID", "Title", "Short citation", "Genre", "Relevance", "Status"]]
+```
+
+### Open questions (DQ##)
+
+```{python}
+oq[["DQ ID", "Question", "Status", "Priority"]]
+```
+
+## Source details
+
+```{python}
+#| output: asis
+for _, row in lit.iterrows():
+    rid = row["ID"]
+    title = row["Title"] or rid
+    link = row["Source Link"]
+    title_md = f"[{title}]({link})" if link else title
+    print(f"### {rid} — {title_md} {{#{rid}}}\n")
+
+    byline = f"*{row['Short citation']}*" if row["Short citation"] else ""
+    byline += f" · {row['Genre']}" if row["Genre"] else ""
+    byline += f" · {row['Lit review section']}" if row["Lit review section"] else ""
+    if byline:
+        print(byline + "\n")
+
+    if row["Short summary"]:
+        print(f"**Summary.** {linkify(row['Short summary'])}\n")
+    if row["Key findings / data quality issue"]:
+        print(f"**Key findings.** {linkify(row['Key findings / data quality issue'])}\n")
+
+    meta = []
+    if row["Datasets"]:
+        meta.append(f"**Datasets:** {row['Datasets']}")
+    if row["Variables"]:
+        meta.append(f"**Variables:** {row['Variables']}")
+    if row["Methods"]:
+        meta.append(f"**Methods:** {row['Methods']}")
+    if meta:
+        print(" · ".join(meta) + "\n")
+
+    if row["Feeds deliverable"]:
+        print(f"**Feeds:** {row['Feeds deliverable']}\n")
+    if row["Related questions"]:
+        print(f"**Related questions:** {linkify(row['Related questions'])}\n")
+
+    print(f"**Relevance:** {row['Relevance']} · **Status:** {row['Status']}\n")
+
+    if row["Other notes?"]:
+        print(f"> {linkify(row['Other notes?'])}\n")
+
+    print("\n---\n")
+```
+
+## Open questions (DQ##) — details
+
+```{python}
+#| output: asis
+for _, row in oq.iterrows():
+    rid = row["DQ ID"]
+    print(f"### {rid} {{#{rid}}}\n")
+    print(f"**Question.** {row['Question']}\n")
+
+    meta = []
+    if row["Raised by / where"]:
+        meta.append(f"**Raised by:** {row['Raised by / where']}")
+    if row["Datasets"]:
+        meta.append(f"**Datasets:** {row['Datasets']}")
+    if row["Variables"]:
+        meta.append(f"**Variables:** {row['Variables']}")
+    if meta:
+        print(" · ".join(meta) + "\n")
+
+    if row["Related sources"]:
+        print(f"**Related sources:** {linkify(row['Related sources'])}\n")
+
+    print(f"**Status:** {row['Status']} · **Priority:** {row['Priority']}\n")
+
+    if row["Notes"]:
+        print(f"> {linkify(row['Notes'])}\n")
+
+    print("\n---\n")
+```

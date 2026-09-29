@@ -1,0 +1,117 @@
+---
+title: "Provenance"
+subtitle: "What happened to a value before it reached you"
+date: last-modified
+---
+
+The plain-language path from raw global model to the number a user pulls from the
+platform. Every variable gets the same diagram with its own stages and its own
+gaps, and only the variable-specific branches
+and gap nodes change.
+
+::: {.callout-note appearance="simple"}
+**How to read it.** Amber stages are where this pillar's **documentation
+attaches**, the bias-correction steps and AE-side processing. Red nodes are
+**known gaps/issues we disclose rather than fix**. An arrow not explicitly labeled is a
+documentation hole to chase.
+:::
+
+## The shared backbone
+
+Every variable follows the same five stages:
+
+1. **Global climate model**: CMIP6, SSP3-7.0
+2. **Bias correction**: differs by path. A priori on the GCM boundary conditions
+   for WRF (*some runs only*), quantile-preserving and observation-trained for
+   LOCA2
+3. **Downscaling**: dynamical (WRF, 3 km, hourly) or statistical/hybrid (LOCA2,
+   3 km)
+4. **Cataloguing**: `cadcat`, analysis-ready
+5. **AE-side processing** : derived variables, indices, localization
+
+What changes per variable is **which variables each path publishes**, **what is
+derived rather than native**, and **which gaps attach where**.
+
+---
+
+## Wind
+
+```{mermaid}
+%%{init: {'theme':'base','themeVariables':{'fontSize':'14px','lineColor':'#54687d','clusterBkg':'#eef2f6','clusterBorder':'#9aa7b4','titleColor':'#1a2733'}}}%%
+flowchart TD
+  GCM["Global climate model<br/>CMIP6 · SSP3-7.0"]
+
+  subgraph WRFPATH["Dynamical path (WRF, WUS-D3)"]
+    APBC["A priori bias correction of GCM<br/>boundary conditions (some models only)"]
+    WRFDS["WRF dynamical downscaling<br/>3 km CA · hourly"]
+    WRFOUT["Native 10 m wind: uas, vas"]
+    APBC --> WRFDS --> WRFOUT
+  end
+
+  subgraph LOCAPATH["Statistical / hybrid path (LOCA2)"]
+    LOCABC["Quantile-preserving bias correction<br/>obs-trained"]
+    LOCADS["LOCA2 hybrid downscaling<br/>3 km"]
+    LOCAOUT["uas, vas, wspeed"]
+    LOCABC --> LOCADS --> LOCAOUT
+  end
+
+  GCM --> APBC
+  GCM --> LOCABC
+  %% WRFDS -. "3 km WRF pattern library" .-> LOCADS
+
+  CAT["cadcat catalog<br/>analysis-ready"]
+  WRFOUT --> CAT
+  LOCAOUT --> CAT
+
+  %% AE["AE-side processing<br/>derived speed &amp; direction · FFWI · localization"]
+  AE["AE-side processing<br/>derived speed &amp; direction"]
+  CAT --> AE
+  USER["AE users<br/>climakitae · AE platform"]
+  AE --> USER
+
+  %% BCGAP["GAP: which runs bias-corrected vs not?<br/>AE serves the non-a-priori-BC WRF (Q02)"]
+  %% APBC -.-> BCGAP
+  %% PARITY["GAP: wind not downscaled<br/>at parity in LOCA2 (R02)"]
+  %% LOCADS -.-> PARITY
+  DQ4["NOTE: wspeed not equal to<br/>sqrt(uas^2 + vas^2) — DQ4. Wind speed downscaeled on its own, use that."]
+  LOCAOUT -.-> DQ4
+
+  classDef pipeline fill:#d8e6f5,stroke:#3b6ea5,color:#0f2540,stroke-width:1px;
+  classDef doc fill:#fbe2c4,stroke:#b7791f,color:#3a2d00,stroke-width:1px;
+  classDef gap fill:#f6d6d4,stroke:#b23b34,color:#4a1512,stroke-width:1px;
+
+  class GCM,WRFDS,WRFOUT,LOCADS,LOCAOUT,CAT,USER pipeline;
+  class APBC,LOCABC,AE doc;
+  class BCGAP,PARITY,DQ4 gap;
+
+  style WRFPATH fill:#eef2f6,stroke:#9aa7b4,color:#1a2733;
+  style LOCAPATH fill:#eef2f6,stroke:#9aa7b4,color:#1a2733;
+```
+
+
+### What the wind diagram exposes
+
+
+- **The bias-correction ambiguity (amber → red).** The WRF a priori bias correction exists
+  for some runs and not others, and AE appears to serve the *non*-a-priori-BC WRF *([R19](../references.qmd#R19) run
+  matrix; [Q02](../references.qmd#Q02) App. A)*. Resolving which cadcat runs are which is the first bias-adjustment
+  documentation task — and if the answer is inconsistent across simulations, that is itself a
+  data-quality finding.
+- **LOCA2 wind parity ([R02](../references.qmd#R02)).** The hybrid path produces a wind field, but wind is not
+  statistically downscaled the way temperature and precipitation are. This becomes the
+  "use-with-caution" basis for every LOCA2 wind row in the [matrix](../guidance/good-bad-matrix.qmd).
+- **The `wspeed` discrepancy ([DQ4](../references.qmd#DQ4)).** `wspeed` does not reconcile with the components in the
+  LOCA2 hybrid files. Wind speed is downscaled independently 
+  rather than derived from the components. `wspeed`
+  [variable card](../guidance/variable-cards.qmd).
+
+
+
+---
+
+*Sources: [R02](../references.qmd#R02), [R09](../references.qmd#R09),
+[R12](../references.qmd#R12), [R15](../references.qmd#R15),
+[R16](../references.qmd#R16), [R19](../references.qmd#R19),
+[Q01](../references.qmd#Q01), [Q02](../references.qmd#Q02),
+[Q03](../references.qmd#Q03); open question [DQ4](../references.qmd#DQ4).
+Full entries on the [References](../references.qmd) page.*

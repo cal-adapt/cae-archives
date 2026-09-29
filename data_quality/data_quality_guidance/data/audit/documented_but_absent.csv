@@ -1,0 +1,9 @@
+activity_id,table_id,variable_id
+WRF,1hr,p
+WRF,1hr,ph
+WRF,day,t
+WRF,day,u
+WRF,day,v
+WRF,mon,t
+WRF,mon,u
+WRF,mon,v
