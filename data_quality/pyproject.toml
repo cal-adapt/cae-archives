@@ -45,6 +45,8 @@ analysis = [
     "rioxarray",
     "matplotlib",
     "cartopy",
+    "itables",
+    "pyyamls"
 ]
 
 # ERA5 lives in an Arraylake repository and needs a login; kept separate so the
