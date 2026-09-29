@@ -16,9 +16,10 @@ index.qmd                        overview — what is covered, and the method in
 method/
   scope-and-definitions.qmd      the method: six dimensions, reference hierarchy, metric choice
   provenance.qmd                 the shared backbone, plus one branch per variable
+  extending.qmd                  what is fixed, what is filled in, checklist
 variables/
   wind-speed.qmd                 characterization
-  <!-- relative-humidity.qmd          characterization -->
+  relative-humidity.qmd          characterization
 guidance/
   good-bad-matrix.qmd            verdicts, all variables
   variable-cards.qmd             one card per variable name
@@ -32,7 +33,9 @@ One page under `variables/`, one branch in `method/provenance.qmd`, rows in
 `data/goodbad_matrix.csv`, an entry in `data/variables.yml`, and a navbar line in
 `_quarto.yml`. Nothing else moves.
 
-
+See `method/extending.qmd` for the checklist and for the two things that are
+**not** the same across variables — the metric (ratio vs difference) and the tail
+of interest.
 
 ## Figures
 

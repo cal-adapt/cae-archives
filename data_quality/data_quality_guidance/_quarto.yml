@@ -20,20 +20,22 @@ website:
             text: Scope & Definitions
           - href: method/provenance.qmd
             text: Provenance
-          # - href: method/extending.qmd
-          #   text: Extending to a new variable
+          - href: method/extending.qmd
+            text: Extending to a new variable
       - text: Variables
         menu:
           - href: variables/wind-speed.qmd
             text: Wind speed
-          # - href: variables/relative-humidity.qmd
-          #   text: Relative humidity
+          - href: variables/relative-humidity.qmd
+            text: Relative humidity
       - text: Guidance
         menu:
           - href: guidance/good-bad-matrix.qmd
             text: Good / Bad Matrix
           - href: guidance/variable-cards.qmd
             text: Variable Cards
+          - href: guidance/catalog-audit.qmd
+            text: Catalog Audit
       - href: references.qmd
         text: References
   page-footer: "AE Data Quality & Documentation Pillar · draft"
