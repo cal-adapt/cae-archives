@@ -1,0 +1,82 @@
+# Variable-card content. One entry per variable; the Variable Cards page renders these.
+# matrix_filter = case-insensitive substring matched against the Variable column of
+# data/wind_goodbad_matrix.csv, used to pull the verdict chips.
+
+- id: wspeed
+  name: 10 m wind speed (scalar)
+  datasets: LOCA2 CA hybrid (3 km); WRF (WUS-D3) also carries native wind
+  units: m/s
+  temporal: daily
+  type: separately downscaled, independently validated scalar field
+  definition: 'Scalar daily-mean 10 m wind speed: the hourly wind *speeds* are averaged to daily. It is
+    **not** the magnitude of the daily-mean vector components.'
+  provenance: GCM -> LOCA2 hybrid downscaling (WRF pattern library) -> wspeed
+  use_for: wind-speed magnitude, directly
+  dont_confuse_with: uas, vas (vector components) - their magnitude is not equal to wspeed
+  matrix_filter: wind
+  known_issues:
+  - id: DQ4
+    severity: resolved
+    text: '`wspeed` and `sqrt(uas^2 + vas^2)` differ at daily resolution **by design**. Wind speed (positive-definite)
+      and the vector components (signed) are downscaled and bias-corrected *separately*, with different
+      extreme-value handling, so the two are not equal and `wspeed` must not be reconstructed from the
+      daily components. The difference is centred positive (scalar pedestal) with a left-skewed tail from
+      the differing bias-correction of the two distributions. All three fields agree well seasonally.
+      **Guidance (Scripps): use the `wspeed` variable directly.** Confirmed R20.'
+  validated: 'Scripps CA-hybrid seasonal validation (R04), RMSE ~0.4-0.5%; vs ERA5 1980-2010 head-to-head
+    (Q05, v2): both downscaled products high, timing agrees; LOCA2 +29% is closer than dynamical WRF-GCM
+    +69%; offset worst over flat interior. The earlier PresRat explanation is rejected - origin is upstream
+    of downscaling. Single member; WRF carries a sampling-frequency caveat'
+  evidence: R04, R15, Q03, R20, Q05
+  citation: D. Pierce (Scripps), personal communication, August 2026 [confirm exact date] — see R20.
+  status: Confirmed (Scripps, R20)
+  owner: ''
+  last_reviewed: ''
+- id: uas
+  name: eastward 10 m wind component
+  datasets: LOCA2 CA hybrid (3 km); WRF (WUS-D3) native
+  units: m/s
+  temporal: daily
+  type: vector component (signed)
+  definition: 'Eastward (zonal) component of the 10 m wind, as a daily-mean vector component. Signed:
+    positive = eastward. Averaged as a vector, so opposing sub-daily flow cancels.'
+  provenance: GCM -> LOCA2 hybrid downscaling (WRF pattern library) -> uas
+  use_for: wind direction and vector operations (paired with vas)
+  dont_confuse_with: wspeed - a scalar speed; sqrt(uas^2+vas^2) does not equal wspeed (see the wspeed
+    card)
+  matrix_filter: null
+  known_issues:
+  - id: DQ4
+    severity: resolved
+    text: Do not build wind speed from the daily components - use `wspeed`. See the wspeed card and R20
+      for the confirmed explanation.
+  validated: Scripps CA-hybrid seasonal validation (R04), RMSE ~0.0 m/s
+  evidence: R04, R15, Q03
+  citation: ''
+  status: Confirmed (Scripps, R20)
+  owner: ''
+  last_reviewed: ''
+- id: vas
+  name: northward 10 m wind component
+  datasets: LOCA2 CA hybrid (3 km); WRF (WUS-D3) native
+  units: m/s
+  temporal: daily
+  type: vector component (signed)
+  definition: 'Northward (meridional) component of the 10 m wind, as a daily-mean vector component. Signed:
+    positive = northward. Averaged as a vector, so opposing sub-daily flow cancels.'
+  provenance: GCM -> LOCA2 hybrid downscaling (WRF pattern library) -> vas
+  use_for: wind direction and vector operations (paired with uas)
+  dont_confuse_with: wspeed - a scalar speed; sqrt(uas^2+vas^2) does not equal wspeed (see the wspeed
+    card)
+  matrix_filter: null
+  known_issues:
+  - id: DQ4
+    severity: resolved
+    text: Do not build wind speed from the daily components - use `wspeed`. See the wspeed card and R20
+      for the confirmed explanation.
+  validated: Scripps CA-hybrid seasonal validation (R04), RMSE ~0.0 m/s
+  evidence: R04, R15, Q03
+  citation: ''
+  status: Confirmed (Scripps, R20)
+  owner: ''
+  last_reviewed: ''

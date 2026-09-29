@@ -1,0 +1,58 @@
+---
+title: "AE Data Quality Guidance"
+subtitle: "What the Cal-Adapt downscaled data is, how good it is, and what it can be used for"
+date: last-modified
+---
+
+This project characterizes the Cal-Adapt Analytics Engine downscaled climate data:
+**WRF** (dynamical) and **LOCA2** (statistical/hybrid), variable by variable, and
+states plainly where each is good.
+
+It is produced by the **Data Quality & Documentation Pillar**, and its guiding
+principle is:
+
+::: {.callout-note appearance="simple"}
+**Document, don't fix.** This pillar characterizes the data and discloses what is
+known. Where a question is open, the deliverable is a clear statement of the issue
+and its likely cause, *not* its resolution.
+:::
+
+---
+
+## Variables covered
+
+| variable | status | headline |
+|----|---|---|
+| [**Wind speed**](variables/wind-speed.qmd) | complete, in review | Unbiased at well-sited stations; distribution too narrow, so **power density is under-predicted by 13–19 %** and high-wind days by a factor of four |
+| [**Relative humidity**](variables/relative-humidity.qmd) | complete | **Split by product.** WRF-ERA5 is usable for fire weather; LOCA2 finds a third of the critical days and no simple correction repairs it |
+| [**2m-temperature**](variables/2m-temperature.qmd) | in production | **Still under production** |
+| [**Radiation**](variables/radiation.qmd) | data downloaded, analysis needs to be developed | **Still under production** |
+
+
+---
+
+## Resources available and how to use them
+
+**Use case for specific variable usage** → the
+[good/bad matrix](guidance/good-bad-matrix.qmd). Good-for, use-with-caution, or
+not-recommended, per variable × use case, with the evidence behind each.
+
+**If you have a variable name in hand and want to know what it is** → the
+[variable cards](guidance/variable-cards.qmd). One card per variable: definition,
+source, transformations, known issues.
+
+**If you want to know what happened to the number before it reached you** → the
+[provenance flowchart](method/provenance.qmd). The plain-language path from global
+model to delivered value, with the known gaps marked.
+
+**If you want the evidence** → the per-variable characterization pages linked
+above, and the [references](references.qmd).
+
+---
+
+## Sumary
+
+Every variable is characterized the same way, so results are comparable across
+variables and the work is repeatable. Full detail in
+[Scope & Definitions](method/scope-and-definitions.qmd).
+

@@ -1,0 +1,456 @@
+---
+title: "Wind speed"
+subtitle: "Characterization of the cadcat 10 m wind speed"
+date: last-modified
+---
+
+**Purpose.** Characterize Cal-Adapt Analytics Engine 10 m wind speed
+(`wspeed` / `wspd10mean`), 1980–2014, against the quality dimensions fixed in
+[Scope & Definitions](../method/scope-and-definitions.qmd). Findings derived here
+feed the [good/bad matrix](../guidance/good-bad-matrix.qmd).
+
+Evaluated against **station observations** from
+[HDP](https://github.com/Eagle-Rock-Analytics/historical-obs-platform) first, then
+against [CONUS404](https://www.usgs.gov/data/conus404-four-kilometer-long-term-regional-hydroclimate-reanalysis-over-conterminous-united)
+and [ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview).
+
+::: {.callout-tip}
+## Headline
+
+**The products are right where we can check them, and can be wrong in a way the mean
+does not show.**
+
+At flat, open airport stations, the exposure class closest to what a grid cell
+represents, both products are unbiased: LOCA2 **0.996**, WRF **0.995** across
+207 stations.
+
+But the *distribution* is too narrow. Observed Weibull shape `k` is **1.51**; the
+products give **2.18** and **2.92**. At those same stations both **under-predict
+wind power density by 13–19 %**, and produce days above 10 m/s at **2.7 % against
+an observed 10.5 %**, one quarter of the observed rate.
+
+:::
+
+::: {.callout-important}
+## Compare against observations first
+
+The first obvious way that comes to mind when reviewing a gridded product is to compare it against a
+reanalysis. The ratio between AE's WRF/LOCA2 and ERA5 is **1.5–1.6 over land**,
+which reads as a 60 % error, and is not one.
+
+**ERA5 at 0.25° (~31 km) cannot represent a 3 km ridge–valley contrast**, so over
+terrain the two are measuring different things and neither is wrong for
+disagreeing. §7 uses ERA5 as a common grid and a diagnostic, not as truth.
+:::
+
+---
+
+## 1. What the stations can and cannot be
+
+Stations are the **primary reference**, not a common frame in the gridding sense,
+and the difference matters:
+
+- **They are points.** A station samples one spot; a LOCA2/WRF cell averages
+  9 km² and an ERA5 cell ~950 km². Part of every model–station difference is this
+  footprint mismatch and cannot be removed.
+- **They do not cover the ocean**, and they are sparse above 2,000 m, exactly
+  where §7 shows the products and ERA5 diverge most.
+
+So a gridded comparison still earns its place, for spatial and seasonal structure
+and for the ocean control. That is what §7 uses ERA5 for.
+
+### Screening
+
+**338 of 1,207 stations were removed**, and the breakdown matters for how the
+archive is described:
+
+| reason | n |
+|---|---|
+| record < 60 months | 292 |
+| < 20 distinct values (stuck sensor) | 98 |
+| observed mean < 0.5 m/s | 46 |
+| excluded prefix `RAWS_TR` | 73 |
+
+**869 stations retained.**
+
+### The observed distribution is not remotely Gaussian
+
+Pooled over **108 million valid hourly observations**: mean 2.47 m/s, median
+2.00, p90 5.37, p99 10.20.
+
+::: {#fig-dist-hourly .column-page-inset}
+```{=html}
+<div class="fig-frame" data-fig="dist_stations_hourly">
+  <iframe src="../figures/html/dist_stations_hourly.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Observed hourly wind speed, pooled across the analysis stations. The zero spike and the mass below 1.5 m/s are reporting convention as much as wind.
+:::
+
+::: {.callout-warning appearance="simple"}
+**13.2 % of values are exactly zero** and **38.3 % fall below 1.5 m/s**. The zero
+spike is the ASOS calm floor, reports below roughly 3 kt are recorded as 0 and
+No model can reproduce it. **Every model/observation ratio in this page is
+therefore slightly generous to the model.**
+:::
+
+::: {#fig-dist-monthly .column-page-inset}
+```{=html}
+<div class="fig-frame" data-fig="dist_stations_monthly">
+  <iframe src="../figures/html/dist_stations_monthly.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+The same observations aggregated to monthly means — the cadence at which products and observations are most often compared. The calm floor and the broad tail both disappear, which is why a monthly comparison cannot see the failure in §5.
+:::
+
+---
+
+## 2. Level at station locations {#sec-level}
+
+**At airports, agreement between both products and observations is remarkable:**
+Median `model / observation` of **0.996 (LOCA2)** and **0.995 (WRF)** across 207
+flat, open stations. Two entirely different downscaling methods land within half
+a percent of observations and of each other.
+
+::: {.callout-important appearance="simple"}
+**Unbiased is not accurate:** Only **33 % of airport stations** fall within ±10 %
+for WRF (**48 %** for LOCA2); the IQRs are 0.84–1.15 and 0.88–1.10. The errors
+cancel across 200 stations rather than being individually small, the signature of
+point-versus-area sampling. For a user siting a single project, the ±10 % figure
+is very relevant.
+:::
+
+**Every other station class reads low relative to the products.**
+
+| class | n | observed mean | LOCA2 | WRF |
+|---|---|---|---|---|
+| airport | 207 | **2.90 m/s** | 0.996 | 0.995 |
+| vegetated (RAWS) | 469 | 2.41 m/s | 1.171 | 1.517 |
+| irrigated (CIMIS) | 173 | 1.96 m/s | 1.403 | 1.488 |
+
+**Airports record more wind than any other class despite sitting lowest:**
+median 135 m against RAWS's 1,094 m. RAWS masts are often on ridges but exist to
+represent wildland fire danger, fuel moisture and ecological conditions, so they
+sit in vegetation-representative clearings; canopy shelter dominates.
+
+**LOCA2 and WRF diverge sharply at sheltered sites:** 1.17 against 1.52 at RAWS,
+while being identical at airports. LOCA2 is smoother over complex terrain,
+produces less terrain-driven acceleration, and so lands nearer observations that
+are themselves sheltered.
+
+
+::: {#fig-agreement-maps}
+```{=html}
+<div class="fig-frame" data-fig="station_agreement_maps">
+  <iframe src="../figures/html/station_agreement_maps.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Per-station model/observation ratio. Scatter within a region is as large as the difference between regions.  The siting effect made visible, and it is why only the airport class can grade the products.
+:::
+
+### 2.1 Does a product explain the variation *between* sites?
+
+**Both products explain between-site variation far better than ERA5.**
+
+| network | ERA5 | LOCA2 | WRF |
+|---|---|---|---|
+| ASOSAWOS | 0.321 | 0.668 | **0.681** |
+| OtherISD | 0.391 | **0.670** | 0.518 |
+| CIMIS | 0.065 | 0.571 | **0.656** |
+| RAWS | 0.294 | **0.799** | 0.444 |
+
+**ERA5's `std_ratio` of 0.495 is the resolution deficit made visible at points.**
+A 31 km field carries only half the station-to-station variance that exists; both
+km-scale-informed products recover most of it (0.86 and 0.92). The km-scale
+products carry real point-scale information that ERA5 does not.
+
+---
+
+## 3. Between products, at station locations {#sec-between}
+
+::: {#fig-between}
+```{=html}
+<div class="fig-frame" data-fig="between_products_stations">
+  <iframe src="../figures/html/between_products_stations.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Product against product at each station, with observations. The spread perpendicular to the 1:1 line is what neither product resolves. 
+:::
+
+**The two WRF drivers are interchangeable**, which is what licenses treating them
+as one product: median difference **+0.60 %**, IQR **−0.76 % to +1.65 %**. The
+driver changes the weather, not the climate.
+
+**The products differ depending on where they are measured:**
+
+| | all stations | airport | irrigated |
+|---|---|---|---|
+| LOCA2 | 1.166 | **0.996** | 1.403 |
+| WRF | 1.354 | **0.995** | 1.488 |
+
+::: {.callout-note appearance="simple"}
+**The pooled column is the least useful number in the table.** LOCA2 1.166
+against WRF 1.354 looks like a substantive difference between products, but it is
+largely a difference in how each responds to stations sheltered by amounts
+neither model knows. §4 asks the same question without that confusion.
+:::
+
+---
+
+## 4. CONUS404: do independent km-scale models agree? {#sec-conus404}
+
+On CONUS404's own 4 km grid, with no coarse field involved:
+
+| product | median ratio | n_cells |
+|---|---|---|
+| **WRF** | **1.020** | 225,848 |
+| LOCA2 | **0.902** | 49,773 |
+
+**Two independently built km-scale models agree to 2 %.** Different institutions,
+different configurations, different land-surface and physics choices.
+
+**LOCA2 at 0.902 sits 10 % below an independent km-scale model** while sitting
+29 % *above* ERA5 (§7). Statistical downscaling inherits the smoother field it was
+trained to reproduce and does not manufacture the acceleration a dynamical model
+generates.
+
+**Taken with §2 the picture is consistent.** At airports both products are right.
+Away from airports LOCA2 is lower than WRF; against an unobstructed km-scale
+comparator LOCA2 is lower than WRF.
+
+---
+
+## 5. Distribution shape and extremes {#sec-extremes}
+
+**This is where both products have issues with respect to the observations, and monthly means hide it completely.**
+
+::: {#fig-dist-daily}
+```{=html}
+<div class="fig-frame" data-fig="dist_daily_stations">
+  <iframe src="../figures/html/dist_daily_stations.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Daily wind speed at all analysis stations. Left: density, the products peak too high and too narrow. Centre: log density, where the tail deficit shows. Right: Q–Q against observations.
+:::
+
+::: {#fig-dist-airports}
+```{=html}
+<div class="fig-frame" data-fig="dist_daily_airports">
+  <iframe src="../figures/html/dist_daily_airports.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+The same at airport stations only, where the mean is right to within half a percent. The shape failure is independent of the level agreement.
+:::
+
+**Weibull `k` describes the balance between calm and windy days**; lower `k`
+means a broader distribution.
+
+| source | mean | k (shape) | A (scale) | power W/m² |
+|---|---|---|---|---|
+| **stations** | 2.43 | **1.51** | 2.69 | 23.7 |
+| LOCA2 | 2.94 | 2.18 | 3.32 | 27.4 |
+| WRF | 3.40 | **2.92** | 3.81 | 34.3 |
+| ERA5 | 2.16 | 2.32 | 2.44 | 10.3 |
+
+Observed `k` is **1.51**; the products give **2.18 and 2.92**, too few calm days
+*and* too few windy ones.
+
+**At airports, where the level is right, both under-predict power density:**
+
+| source | speed ratio | power ratio |
+|---|---|---|
+| LOCA2 | 0.977 | **0.812** |
+| WRF | 1.077 | **0.875** |
+| ERA5 | 0.757 | 0.355 |
+
+A product matching observed mean wind to within 8 % delivers **13–19 % less power
+density**, the number a resource assessment or calculation will inherit.
+
+### Upper tail
+
+::: {#fig-extremes .column-page-inset}
+```{=html}
+<div class="fig-frame" data-fig="extremes_stations">
+  <iframe src="../figures/html/extremes_stations.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Daily maxima, observed against modelled. Quantile ratios fall monotonically toward q99, so the distribution is too narrow at the top rather than merely displaced.
+:::
+
+| group | mean ratio | q90 ratio | q99 ratio |
+|---|---|---|---|
+| all stations | 1.124 | 0.974 | **0.867** |
+| airports | 0.835 | 0.786 | **0.782** |
+
+**The ratios fall monotonically with quantile.** A scale-factor error would keep
+them flat. Falling ratios mean the modelled distribution is too narrow at the
+top, agreeing with the Weibull shape above, arrived at independently from daily
+maxima.
+
+
+---
+
+## 6. Seasonal and regional structure {#sec-seasonal}
+
+::: {#fig-seasonal .column-page-inset}
+```{=html}
+<div class="fig-frame" data-fig="seasonal_stations">
+  <iframe src="../figures/html/seasonal_stations.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Seasonal cycle of agreement at station locations. Nearly flat, with a mild winter excess.
+:::
+
+- The seasonal cycle of agreement is resolved comparably across regions.
+- **Both products agree slightly better in summer than in winter.**
+- **LOCA2 peaks in January almost everywhere** (6 of 8 regions) while WRF's peak
+  month scatters across October, November, December, January and May, a
+  statistical method inheriting one domain-wide seasonal signature, and a
+  dynamical model producing region-specific seasonality.
+
+### 6.1 Regional structure
+
+::: {#fig-regions}
+```{=html}
+<div class="fig-frame" data-fig="region_assignment">
+  <iframe src="../figures/html/region_assignment.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Region assignment from station coordinates and elevation. Worth checking before reading the table below — the boxes are approximate and go wrong at edges.
+:::
+
+::: {#fig-agreement-region}
+```{=html}
+<div class="fig-frame" data-fig="agreement_by_region">
+  <iframe src="../figures/html/agreement_by_region.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Agreement by California climate region: median, spread, and the airport-only subset. The airport column is the unconfounded one.
+:::
+
+**Agreement is regionally uniform at airports and regionally structured
+everywhere else.**
+
+| region | n_air | LOCA2 | WRF |
+|---|---|---|---|
+| North Coast | 12 | 1.122 | 1.050 |
+| Bay & Delta | 25 | 1.046 | **0.811** |
+| Central Coast | 8 | 0.983 | 0.917 |
+| South Coast | 60 | 1.052 | 0.952 |
+| Sierra Nevada | 11 | 1.018 | 1.106 |
+| Central Valley | 25 | 0.996 | 1.064 |
+| Mojave/Sonoran | 46 | **0.873** | 1.020 |
+| Northeast | 10 | **0.827** | 1.110 |
+
+**Most regions sit within ±10 % of 1.0 for both products.** The domain-wide
+airport result of §2 is not an average of large opposing regional errors; it holds
+region by region.
+
+**The exceptions are informative and not shared.** LOCA2 runs low in the Mojave
+(0.873) and Northeast (0.827). The two most arid, thermally driven regions, 
+where WRF is fine (1.020, 1.110). WRF runs low in the Bay & Delta (0.811), the one
+region whose wind climate is dominated by a sea breeze through a single
+topographic feature. **Each product fails in a regime the other handles.**
+
+---
+
+## 7. ERA5: where and when coarse and fine fields diverge {#sec-era5}
+
+Used as a common grid and a diagnostic, not as truth, and for the one thing it
+is uniquely good for: complete uniform coverage, which supplies a **control
+region** where the mechanism under test should switch off.
+
+::: {#fig-ratio-region .column-page-inset}
+```{=html}
+<div class="fig-frame" data-fig="ratio_by_region">
+  <iframe src="../figures/html/ratio_by_region.html" loading="lazy" scrolling="no"></iframe>
+</div>
+```
+Ratio against ERA5 by region and terrain. WRF's response rises with sub-grid relief; LOCA2's stays flat, the signature of a statistically downscaled field inheriting a smoother target.
+:::
+
+**Over open water the km-scale models and ERA5 agree to within half a percent.
+Over land they diverge by 52–62 %.**
+
+| product | ocean | coastal | land | pooled |
+|---|---|---|---|---|
+| WRF | **0.995** | 1.167 | **1.617** | 1.458 |
+| CONUS404 | **0.996** | 1.180 | **1.522** | 1.124 |
+| LOCA2 | — | 1.163 | 1.289 | 1.285 |
+
+::: {.callout-tip appearance="simple"}
+**The ocean column is a positive control and it is decisive.** WRF 0.995 and
+CONUS404 0.996. Two independently configured 3–4 km models agreeing with a 31 km
+reanalysis to within 0.5 % where there is no sub-grid terrain to resolve.
+
+A calibration error would
+bias a model *everywhere*, including over water. It does not. **So the land
+disagreement is a resolution difference, not an error.**
+:::
+
+---
+
+## 8. What this means for the matrix
+
+| dimension | LOCA2 | WRF |
+|---|---|---|
+| mean bias | ✅ 0.996 at airports | ✅ 0.995 at airports |
+| spatial pattern | ⚠️ too smooth (0.902 vs CONUS404) | ✅ 1.020 vs CONUS404 |
+| terrain response | ⚠️ flat across elevation bands | ✅ tracks sub-grid relief |
+| seasonal structure | ✅ flat ratio, one domain-wide peak | ✅ flat ratio, regional peaks |
+| diurnal structure | ❓ no hourly data | ❓ — hourly analysis not done |
+| extremes | ❓ no max-wind variable | ⚠️ tail 13 % short at q99 |
+| distribution shape | ⚠️ k = 2.18 vs 1.51 | ⚠️ k = 2.92 vs 1.51 |
+
+**The pattern across the row is the finding.** Both products pass on level and
+fail on shape. The use cases users actually bring would determine whether this limitation is critical.
+
+---
+
+## 9. Caveats
+
+### On the observational reference
+
+1. **Only airports are unobstructed.** Every other class confounds model error
+   with shelter (§2)..
+2. **Footprint.** A station is a point; a LOCA2 cell averages 9 km² and an ERA5
+   cell ~950 km². Part of §2's "only a third within ±10 %" is this and cannot be
+   removed.
+3. **A calm floor.** 13.2 % of hourly observations are exactly zero, the ASOS/AWOS
+   sub-3-kt convention. No model reproduces it, so observed means are biased low
+   and **every ratio here is slightly generous to the model**.
+4. **Reporting quantisation.** Harmless for means; relevant to §5's Weibull fits
+   and quantile ratios.
+5. **338 of 1,207 stations screened out**, 292 for records under 60 months. The
+   retained 869 are not a random sample of the archive.
+6. **Coverage gaps.** No ocean stations, and few unobstructed high-terrain
+   stations, the Sierra has 11 airports against 73 RAWS. The products are least
+   verifiable exactly where §7 shows they diverge most from ERA5.
+
+### On what is not measured
+
+11. **No uncertainty.** Every result is a median with no bootstrap, no confidence
+    interval, no effective sample size for autocorrelated series.
+12. **No hourly data in this analysis**, so no diurnal analysis. It is not
+    settled how valid a model-against-hourly-station comparison would be.
+13. **Historical only.** No check that skill is stationary under warming.
+
+---
+
+## 10. Summary???
+
+
+---
+
+## Worth doing next
+
+1. **Bootstrap everything**: every headline number is a point estimate.
+2. **Diagnose the distribution shape error** : is it effective resolution,
+   temporal averaging, or the PBL scheme?
+3. **Analyse hourly wind**.
+
+---
+
+*Method: [Scope & Definitions](../method/scope-and-definitions.qmd). Full
+diagnostics: `notebooks/wind_speed_review.ipynb`. Evidence IDs resolve on the
+[References](../references.qmd) page.*

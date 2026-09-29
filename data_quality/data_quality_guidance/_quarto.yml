@@ -1,0 +1,62 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "method/*.qmd"
+    - "variables/*.qmd"
+    - "guidance/*.qmd"
+
+website:
+  title: "AE Data Quality Guidance"
+  description: "Data Quality & Documentation Pillar — variable characterization and usage guidance"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Overview
+      - text: Method
+        menu:
+          - href: method/scope-and-definitions.qmd
+            text: Scope & Definitions
+          - href: method/provenance.qmd
+            text: Provenance
+          # - href: method/extending.qmd
+          #   text: Extending to a new variable
+      - text: Variables
+        menu:
+          - href: variables/wind-speed.qmd
+            text: Wind speed
+          # - href: variables/relative-humidity.qmd
+          #   text: Relative humidity
+      - text: Guidance
+        menu:
+          - href: guidance/good-bad-matrix.qmd
+            text: Good / Bad Matrix
+          - href: guidance/variable-cards.qmd
+            text: Variable Cards
+      - href: references.qmd
+        text: References
+  page-footer: "AE Data Quality & Documentation Pillar · draft"
+
+format:
+  html:
+    theme: cosmo
+    css:
+      - styles.css
+      # Generated from the exported figures by figures/write_heights_css.py.
+      # Re-run it after re-exporting; it updates every page at once.
+      - figures/heights.css
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-tools: false
+    # Figures are embedded as iframes, which do not inherit the page's width
+    # constraints; `page-layout: full` gives multi-panel figures room without
+    # forcing each one to scroll.
+    page-layout: article
+    fig-cap-location: bottom
+
+execute:
+  echo: false
+  warning: false
+  freeze: auto
