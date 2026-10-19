@@ -1,0 +1,48 @@
+# Worked example: the Sacramento August–September 2020 heat waves
+# (blog/2026-08-13-sac-extreme-heat/).
+#
+# To start a new post: copy this file into the post folder as `event_config.yaml`
+# and edit every value. Relative paths resolve against the post folder.
+
+hazard: heat                     # heat | precip — picks heat_event.ipynb / precip_event.ipynb
+event_name: "Sacramento 2020"
+
+location:
+  station_label: "KSAC"          # ICAO code; resolved to an HDP station automatically
+  place_name: "Sacramento"       # used in titles and output filenames
+  clip: "Sacramento County"      # WRF clip region (a climakitae boundary key)
+  zip_shapefile: "sac_zipcodes.zip"  # zip codes covering the map area (needs ZIP5, PO_NAME)
+
+event:
+  year: 2020
+  windows:                       # [start, end] per heat wave, any number
+    - ["2020-08-14", "2020-08-26"]
+    - ["2020-09-05", "2020-09-08"]
+
+thresholds:
+  tmax_f: 105                    # hot day: daily max above this
+  tmin_f: 75                     # hot night: daily min at or above this
+  consecutive_days: 1            # heatwave event: this many hot day/hot night days in a row
+                                 # (1 = single-day events, matching the Sacramento 2020 analysis)
+
+projection:
+  warming_levels: [0.8, 1.5, 2.0]
+  warming_level_window: 15       # years either side of the warming-level crossing
+  baseline_warming_level: 0.8
+  percentile: 0.999              # Part 3 threshold calibration
+  window_years: 30               # = 2 x warming_level_window
+  sublabels: ["Historical", "Today", "Mid-Century"]
+  exclude_simulations: ["EC-Earth3-Veg"]   # no 0.8°C coverage
+
+publish:
+  # The cal-adapt-guidance post folder that `run_event.sh <post> --publish` MOVES the
+  # figures into (and starts index.qmd in, from heat_index_template.qmd, if missing).
+  # Relative to this post folder: blog/<post>/ -> cal-adapt/ is 4 levels up.
+  guidance_post_dir: "../../../../cal-adapt-guidance/blog/posts/2026-10-19-sac-heat-test"
+
+# Optional. Defaults (set in the notebook) work for heat:
+# crai:
+#   cache_dir: ../relevant_hazards_nb_template/crai_cache
+#   exposure_metrics: [median_heat_warning_days]
+#   loss_metrics: [heat_crop_loss_acres, heat_crop_loss_indemnity_amount,
+#                  avg_age_adjust_heat_hospitalizations_per_10000]
