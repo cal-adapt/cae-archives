@@ -1,5 +1,5 @@
 # Settings for crai_base.ipynb — builds the statewide CRAI inputs in crai_cache/.
-# Paths are relative to this file's folder.
+# Paths are relative to the framework folder (relevant-hazard-template/).
 
 # local -> build crai_cache/ from the snapshot files below (seconds, no AWS needed)
 # s3    -> download the Cal-CRAI metrics from S3 and recompute every domain score
@@ -16,5 +16,5 @@ s3:
   bucket: ca-climate-index
   metrics_prefix: 3_fair_data/index_data/
   tracts: s3://ca-climate-index/0_map_data/2021_tiger_census_tract/2021_ca_tract/
-  metric_list: cava_calcrai_metrics.csv
+  metric_list: crai_seed/cava_calcrai_metrics.csv
   redownload: false                     # true = discard the cached S3 download and fetch again

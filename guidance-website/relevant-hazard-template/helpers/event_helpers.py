@@ -21,7 +21,8 @@ import yaml
 
 import crai_helpers
 
-FRAMEWORK_DIR = os.path.dirname(os.path.abspath(__file__))
+# This file lives in <framework>/helpers/ — the framework root is one level up.
+FRAMEWORK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CRAI_CACHE = os.path.join(FRAMEWORK_DIR, "crai_cache")
 
 

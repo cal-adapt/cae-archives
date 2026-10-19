@@ -79,7 +79,7 @@ run_notebook() {
 
   export EVENT_CONFIG="$CONFIG"
   export EVENT_FRAMEWORK_DIR="$FRAMEWORK_DIR"
-  export PYTHONPATH="$FRAMEWORK_DIR${PYTHONPATH:+:$PYTHONPATH}"
+  export PYTHONPATH="$FRAMEWORK_DIR/helpers${PYTHONPATH:+:$PYTHONPATH}"
 
   echo "Running $notebook with $CONFIG (conda env: $CONDA_ENV)"
   (cd "$POST_DIR" && conda run -n "$CONDA_ENV" jupyter execute --inplace "$notebook")

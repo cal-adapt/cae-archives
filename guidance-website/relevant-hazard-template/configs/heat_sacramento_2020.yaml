@@ -1,5 +1,5 @@
 # Worked example: the Sacramento August–September 2020 heat waves
-# (blog/2026-08-13-sac-extreme-heat/).
+# (guidance-website/blog/2026-08-13-sac-extreme-heat/).
 #
 # To start a new post: copy this file into the post folder as `event_config.yaml`
 # and edit every value. Relative paths resolve against the post folder.

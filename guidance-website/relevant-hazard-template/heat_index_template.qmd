@@ -14,10 +14,12 @@ format:
 ---
 
 <!--
-Post template for heat_event.ipynb (relevant-hazard-template/heat_index_template.qmd).
-This file is copied into each post folder in cae-archives as index.qmd — that copy is
-the source of truth for the post. `run_event.sh <post> --publish` moves the notebook's
-figures into the guidance-site post folder and copies index.qmd there. Every figure
+Post template for heat_event.ipynb
+(cae-archives/guidance-website/relevant-hazard-template/heat_index_template.qmd).
+This file is copied into each post folder (cae-archives/guidance-website/blog/<post>/)
+as index.qmd — that copy is the source of truth for the post. From guidance-website/blog/,
+`../relevant-hazard-template/run_event.sh <post> --publish` moves the notebook's figures
+into the guidance-site post folder and copies index.qmd there. Every figure
 below is already wired to the notebook's output names — fill in the TODO prose,
 captions, and numbers (from the notebook's printed output).
 -->
