@@ -26,7 +26,7 @@ CRAI notebook chain (both left untouched for reference).
 3. Copy `configs/heat_sacramento_2020.yaml` into it as `event_config.yaml` and edit it.
 4. Put a zip-code shapefile covering the map area in the post folder (`location.zip_shapefile`),
    and set `publish.guidance_post_dir` to the post's folder in `cal-adapt-guidance/blog/posts/`.
-5. From `blog/`: `relevant_hazards_nb_template/run_event.sh 2027-07-01-fresno-extreme-heat --publish`
+5. From `blog/`: `../relevant-hazard-template/run_event.sh 2027-07-01-fresno-extreme-heat --publish`
    — runs the notebook, then publishes to the guidance post folder:
    - **moves** every `figures/{html,static}/fig_*` file (an empty source folder means
      nothing new to publish)

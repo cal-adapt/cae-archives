@@ -42,7 +42,7 @@ publish:
 
 # Optional. Defaults (set in the notebook) work for heat:
 # crai:
-#   cache_dir: ../relevant_hazards_nb_template/crai_cache
+#   cache_dir: ../../relevant-hazard-template/crai_cache
 #   exposure_metrics: [median_heat_warning_days]
 #   loss_metrics: [heat_crop_loss_acres, heat_crop_loss_indemnity_amount,
 #                  avg_age_adjust_heat_hospitalizations_per_10000]
