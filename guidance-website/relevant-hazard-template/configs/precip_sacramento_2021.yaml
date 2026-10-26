@@ -1,0 +1,44 @@
+# Worked example / test case: the Sacramento October 2021 atmospheric river.
+#
+# To start a new post, from guidance-website/blog/:
+#   ../relevant-hazard-template/run_event.sh <post> --new precip
+# copies this file to <post>/_analysis/event_config.yaml — edit every value there.
+# Relative paths resolve against _analysis/.
+
+hazard: precip                   # heat | precip — picks heat_event.ipynb / precip_event.ipynb
+event_name: "Sacramento October 2021 Atmospheric River"
+
+location:
+  station_label: "KSAC"          # ICAO code; resolved to an HDP station automatically
+  place_name: "Sacramento"       # used in titles and output filenames
+  clip: "Sacramento County"      # WRF clip region (a climakitae boundary key)
+  zip_shapefile: "sac_zipcodes.zip"  # zip codes covering the map area (needs ZIP5, PO_NAME)
+
+event:
+  year: 2021
+  windows:                       # [start, end] per storm, any number
+    - ["2021-10-23", "2021-10-26"]
+
+thresholds:
+  wet_day_in: 0.01               # a wet day has at least this much precipitation (inches)
+  events:                        # one entry per event definition — each gets its own figures/maps
+    - id: 3day_p99               # used in figure and output filenames
+      label: "3-day rainfall above the 99th percentile"
+      accumulation_days: 3       # rolling window length (days)
+      percentile: 0.99           # of the N-day totals that end on a wet day
+                                 # station: from the HDP record; projections: per simulation +
+                                 # grid cell at baseline_warming_level
+
+projection:
+  warming_levels: [0.8, 1.5, 2.0]
+  warming_level_window: 15       # years either side of the warming-level crossing
+  baseline_warming_level: 0.8    # where the percentile thresholds are calibrated
+  sublabels: ["Historical", "Today", "Mid-Century"]
+  exclude_simulations: ["EC-Earth3-Veg"]   # no 0.8°C coverage
+
+# Optional. Defaults (set in the notebook) for precip — the event metric replaces
+# Cal-CRAI's projected-precip exposure metrics (precip_99percentile, surface_runoff):
+# crai:
+#   exposure_metrics: [median_flood_warning_days, floodplain_percentage]
+#   loss_metrics: [avg_flood_insurance_payout_per_claim, estimated_flood_crop_loss_cost,
+#                  total_flood_fatalities]

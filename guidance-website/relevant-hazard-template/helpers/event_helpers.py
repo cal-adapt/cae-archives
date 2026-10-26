@@ -29,6 +29,9 @@ DEFAULT_CRAI_CACHE = os.path.join(FRAMEWORK_DIR, "crai_cache")
 # ===========================================================================
 # Config
 # ===========================================================================
+ANALYSIS_DIR_NAME = "_analysis"   # per-post folder for the notebook, config and CRAI layers
+
+
 def gwl_slug(level):
     """CRAI file-naming convention for a warming level, e.g. 0.8 -> 'gwl08', 2.0 -> 'gwl2'."""
     digits = f"{level:.2f}".replace(".", "").rstrip("0") or "0"
@@ -47,20 +50,27 @@ def _require(raw, path, *keys):
 class EventConfig:
     """Everything read from event_config.yaml, plus every path the notebooks write to.
 
-    Relative paths in the config (zip_shapefile, crai.cache_dir) resolve against
-    the config file's own folder — the post folder — not the kernel's cwd.
+    The config lives in <post>/_analysis/. Relative paths in it (zip_shapefile,
+    crai.cache_dir) resolve against that folder, not the kernel's cwd. Figures are
+    written to the post folder itself (next to index.qmd); CRAI layers stay in
+    _analysis/. Quarto ignores folders starting with "_", so the whole post folder
+    can be copied into cal-adapt-guidance/blog/posts/ as-is.
     """
 
     def __init__(self, raw, path):
         self.raw = raw
         self.path = os.path.abspath(path)
-        self.post_dir = os.path.dirname(self.path)
+        self.analysis_dir = os.path.dirname(self.path)
+        # <post>/_analysis/event_config.yaml -> <post>; a config elsewhere -> its own folder
+        self.post_dir = (os.path.dirname(self.analysis_dir)
+                         if os.path.basename(self.analysis_dir) == ANALYSIS_DIR_NAME
+                         else self.analysis_dir)
 
         def req(*keys):
             return _require(raw, path, *keys)
 
-        def in_post_dir(p):
-            return p if os.path.isabs(p) else os.path.join(self.post_dir, p)
+        def in_analysis_dir(p):
+            return p if os.path.isabs(p) else os.path.join(self.analysis_dir, p)
 
         self.hazard = req("hazard")
         self.event_name = req("event_name")
@@ -68,7 +78,7 @@ class EventConfig:
         self.station_label = req("location", "station_label")
         self.place_name = req("location", "place_name")
         self.clip = req("location", "clip")
-        self.zip_shapefile = in_post_dir(req("location", "zip_shapefile"))
+        self.zip_shapefile = in_analysis_dir(req("location", "zip_shapefile"))
         self.place_slug = self.place_name.lower().replace(" ", "_")
 
         self.event_year = req("event", "year")
@@ -81,13 +91,13 @@ class EventConfig:
         self.warming_levels = req("projection", "warming_levels")
         self.warming_level_window = req("projection", "warming_level_window")
         self.baseline_warming_level = req("projection", "baseline_warming_level")
-        self.percentile = req("projection", "percentile")
-        self.window_years = req("projection", "window_years")
+        # Heat's Part 3 calibration percentile; precip sets percentiles per event definition.
+        self.percentile = proj.get("percentile")
         self.sublabels = proj.get("sublabels") or None
         self.exclude_simulations = proj.get("exclude_simulations") or []
 
         crai = raw.get("crai") or {}
-        self.crai_cache_dir = in_post_dir(crai["cache_dir"]) if crai.get("cache_dir") else DEFAULT_CRAI_CACHE
+        self.crai_cache_dir = in_analysis_dir(crai["cache_dir"]) if crai.get("cache_dir") else DEFAULT_CRAI_CACHE
         self.crai_exposure_metrics = crai.get("exposure_metrics")  # None -> notebook default
         self.crai_loss_metrics = crai.get("loss_metrics")
 
@@ -106,10 +116,10 @@ class EventConfig:
             for slug, wl, sub in zip(self.gwl_order, self.warming_levels, subs)
         }
 
-        # Output folders — all inside the post folder.
+        # Figures sit next to index.qmd (the paths it embeds); CRAI layers in _analysis/.
         self.figures_html_dir = os.path.join(self.post_dir, "figures", "html")
         self.figures_static_dir = os.path.join(self.post_dir, "figures", "static")
-        self.crai_out_dir = os.path.join(self.post_dir, "crai_layers")
+        self.crai_out_dir = os.path.join(self.analysis_dir, "crai_layers")
 
     # ---- every output filename comes from these methods -------------------
     def make_output_dirs(self):
@@ -278,6 +288,45 @@ def count_events(mask, dim, min_length=1):
 
 
 # ===========================================================================
+# Precipitation (shared by precip_event.ipynb and diagnostics/hdp_precip_issues.ipynb)
+# ===========================================================================
+def hdp_daily_precip_in(station):
+    """Daily precipitation totals in inches from an HDP station's hourly `pr` (mm).
+    Days with no reports at all stay NaN rather than becoming 0.
+
+    Uses HDP `pr` as-is — see diagnostics/hdp_precip_issues.ipynb for the
+    double counting this inherits.
+    """
+    return station["pr"].resample(time="D").sum(min_count=1) / 25.4
+
+
+def nday_totals(daily, n, dim):
+    """Rolling n-day precipitation totals, labeled by each window's last day."""
+    return daily.rolling({dim: n}).sum()
+
+
+def wet_day_nday_threshold(daily, n, percentile, wet_day_in, dim):
+    """`percentile` of the n-day totals that end on a wet day (daily >= wet_day_in).
+
+    Reduces over `dim` only, so a station series gives a single value and a
+    gridded (sim, time_delta, y, x) array gives one threshold per sim and cell.
+    """
+    totals = nday_totals(daily, n, dim)
+    return totals.where(daily >= wet_day_in).quantile(percentile, dim=dim).drop_vars("quantile")
+
+
+def nday_events(daily, n, threshold, dim):
+    """Number of distinct events whose n-day total exceeds `threshold` along `dim`.
+    Back-to-back qualifying days are one event (see count_events)."""
+    return count_events(nday_totals(daily, n, dim) > threshold, dim)
+
+
+def water_year(time):
+    """Water year (Oct–Sep) for each timestamp: Oct–Dec belong to the next year's label."""
+    return time.dt.year + (time.dt.month >= 10)
+
+
+# ===========================================================================
 # Census tracts
 # ===========================================================================
 CENSUS_TRACTS_S3 = "s3://ca-climate-index/0_map_data/2021_tiger_census_tract/2021_ca_tract/"
@@ -310,6 +359,16 @@ def geoid_to_zip_label(tracts, zip_codes):
     labels = (joined["ZIP5"].fillna("Unknown") + " ("
               + joined["PO_NAME"].fillna("Unknown").str.title() + ")")
     return dict(zip(joined["GEOID"], labels))
+
+
+def tracts_inside_area(gdf, zip_codes):
+    """Rows of `gdf` (tract polygons) whose centroid falls inside the zip-code area.
+    Drops the edge tracts that only touch the area, which tracts_in_area keeps."""
+    crs = gdf.crs or "EPSG:4326"
+    utm = gdf.set_crs(crs, allow_override=True).estimate_utm_crs()
+    centroids = gdf.geometry.set_crs(crs, allow_override=True).to_crs(utm).centroid
+    area = zip_codes.to_crs(utm).union_all()
+    return gdf[centroids.within(area).values]
 
 
 def _wrf_crs():
@@ -469,12 +528,13 @@ def save_figure(fig, cfg, name):
     fig.write_html(html, include_plotlyjs="cdn", full_html=False, config=PLOTLY_CONFIG)
 
 
-def plot_annual_bars(years, values, event_year, title, yaxis_title, unit):
-    """Annual bars (warm/positive red, negative blue) with the event year outlined
-    in gold and a centered 5-year rolling mean."""
+def plot_annual_bars(years, values, event_year, title, yaxis_title, unit,
+                     positive_color="firebrick", negative_color="steelblue"):
+    """Annual bars (positive_color at or above 0, negative_color below) with the
+    event year outlined in gold and a centered 5-year rolling mean."""
     years, values = list(years), np.asarray(values)
     rolling = pd.Series(values, index=years).rolling(5, center=True).mean()
-    colors = ["firebrick" if v >= 0 else "steelblue" for v in values]
+    colors = [positive_color if v >= 0 else negative_color for v in values]
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
@@ -596,14 +656,14 @@ def _simplified_geojson(gdf, simplify_tol=SIMPLIFY_TOL):
 
 
 def tabbed_choropleth(layers, value_col, title, name, cfg, tracts, zip_labels, zip_codes,
-                      hover_label=None, colorbar_title="# of Days"):
+                      hover_label=None, colorbar_title="# of Days", colorscale="YlOrRd"):
     """One tab per GWL showing `value_col` per tract; saved via save_figure(name)."""
     vmax = max(layers[g][value_col].max() for g in cfg.gwl_order)
     geojson = _simplified_geojson(tracts)
     traces = [go.Choropleth(
         geojson=geojson, featureidkey="properties.GEOID",
         locations=layers[g]["GEOID"], z=layers[g][value_col],
-        zmin=0, zmax=vmax, colorscale="YlOrRd",
+        zmin=0, zmax=vmax, colorscale=colorscale,
         marker=dict(line=dict(color="#cccccc", width=0.4)),
         colorbar=dict(title=dict(text=colorbar_title, font=dict(size=16)), tickfont=dict(size=16),
                       thickness=20, len=0.7, x=1.0, xanchor="left"),
@@ -619,7 +679,9 @@ def tabbed_choropleth(layers, value_col, title, name, cfg, tracts, zip_labels, z
 
 
 def tabbed_delta_choropleth(deltas, title, name, cfg, zip_labels, zip_codes):
-    """One tab per non-baseline GWL showing the change vs. the baseline GWL."""
+    """One tab per non-baseline GWL showing the change vs. the baseline GWL.
+    Only tracts whose centroid is inside the zip-code area are drawn."""
+    deltas = {k: tracts_inside_area(d, zip_codes) for k, d in deltas.items()}
     keys = list(deltas)
     vmax = max(np.nanmax(np.abs(deltas[k]["delta"])) for k in keys) or 1
     geojson = _simplified_geojson(deltas[keys[0]])
