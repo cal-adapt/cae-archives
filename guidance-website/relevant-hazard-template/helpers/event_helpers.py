@@ -75,7 +75,10 @@ class EventConfig:
         self.hazard = req("hazard")
         self.event_name = req("event_name")
 
-        self.station_label = req("location", "station_label")
+        loc = req("location")
+        # Airport code; empty -> precip_event searches location.clip for a station instead
+        self.station_label = loc.get("station_label") or None
+        self.network_id = loc.get("network_id") or HDP_NETWORK_ID   # ASOSAWOS | OtherISD
         self.place_name = req("location", "place_name")
         self.clip = req("location", "clip")
         self.zip_shapefile = in_analysis_dir(req("location", "zip_shapefile"))
@@ -172,26 +175,130 @@ def load_config(path=None):
 # ===========================================================================
 # Observed station data (HDP)
 # ===========================================================================
-HDP_NETWORK_ID = "ASOSAWOS"
+HDP_NETWORK_ID = "ASOSAWOS"   # default; OtherISD is the other ISD-derived network
+# NOAA's list of every ISD station: USAF + WBAN (= the HDP id number), ICAO code, lat/lon
+ISD_HISTORY_URL = "https://www.ncei.noaa.gov/pub/data/noaa/isd-history.csv"
+COUNTIES_URL = "https://www2.census.gov/geo/tiger/GENZ2023/shp/cb_2023_us_county_20m.zip"
+
+_isd_history_cache = None
 
 
-def resolve_hdp_station(station_label, network_id=HDP_NETWORK_ID):
-    """Resolve an ICAO label (e.g. 'KSAC') to its HDP station_id, or raise."""
+def load_isd_history():
+    """NOAA's ISD station list with a `number` column (USAF + WBAN). Downloaded once per session."""
+    global _isd_history_cache
+    if _isd_history_cache is None:
+        isd = pd.read_csv(ISD_HISTORY_URL, dtype={"USAF": str, "WBAN": str})
+        isd["number"] = isd["USAF"] + isd["WBAN"]
+        _isd_history_cache = isd
+    return _isd_history_cache
+
+
+def isd_candidates(isd, hdp_df, network_id, icao=None, area=None):
+    """HDP station_ids in `network_id` for ISD stations matching an ICAO code and/or
+    lying inside `area` (a shapely geometry in lon/lat). HDP ids are
+    "<network>_<USAF><WBAN>", so ISD rows map to them by number."""
+    rows = isd
+    if icao is not None:
+        rows = rows[rows["ICAO"].str.upper() == icao.upper()]
+    if area is not None:
+        rows = rows.dropna(subset=["LAT", "LON"])
+        points = gpd.GeoSeries(gpd.points_from_xy(rows["LON"], rows["LAT"]), index=rows.index)
+        rows = rows[points.within(area)]
+    in_network = set(hdp_df.loc[hdp_df["network_id"] == network_id, "station_id"])
+    ids = [f"{network_id}_{n}" for n in rows["number"].drop_duplicates()]
+    return [i for i in ids if i in in_network]
+
+
+def longest_pr_record(station_ids, network_id):
+    """The station whose `pr` record spans the longest time, first report to last,
+    however often it reports in between. Reads only `pr` from each station."""
+    import climakitae as ck
+
+    cd = ck.ClimateData(verbosity=-1)
+    best_id, best_span = None, pd.Timedelta(0)
+    for sid in station_ids:
+        try:
+            ds = cd.catalog("hdp").network_id(network_id).station_id(sid).get()
+        except Exception:
+            continue
+        if ds is None or "pr" not in ds:
+            continue
+        pr = ds["pr"].squeeze()
+        reported = pr.time.values[pr.notnull().compute().values]
+        if reported.size == 0:
+            continue
+        span = pd.Timestamp(reported[-1]) - pd.Timestamp(reported[0])
+        if span > best_span:
+            best_id, best_span = sid, span
+    if best_id is None:
+        raise ValueError(f"None of {station_ids} have precipitation data")
+    return best_id
+
+
+def _resolve_legacy_asos(station_label):
+    """ASOSAWOS id from climakitae's legacy airport table (the original lookup), or None."""
     from climakitae.new_core.data_access.data_access import DataCatalog
     from climakitae.new_core.processors.processor_utils import resolve_airport_code_to_hdp_station_id
 
-    # The resolver returns the identifier unchanged on no match rather than
-    # raising, so confirm the result exists in the live HDP catalog.
-    stations = DataCatalog()["stations"]
-    station_id = resolve_airport_code_to_hdp_station_id(station_label, stations)
+    station_id = resolve_airport_code_to_hdp_station_id(station_label, DataCatalog()["stations"])
+    return station_id if station_id.startswith(f"{HDP_NETWORK_ID}_") else None
+
+
+def resolve_hdp_station(station_label, network_id=HDP_NETWORK_ID):
+    """Resolve an ICAO label (e.g. 'KSAC', 'KSMF') to its HDP station_id in `network_id`, or raise.
+
+    ASOSAWOS tries climakitae's legacy airport table first. Otherwise the code is looked
+    up in NOAA's ISD station list; when one code has several ids in the network (ISD
+    renumbers stations that move or change equipment), the one with the longest `pr`
+    record is used.
+    """
+    from climakitae.new_core.data_access.data_access import DataCatalog
+
+    if not station_label:
+        raise ValueError("No location.station_label — set one, or use find_station_in_area()")
     hdp_df = DataCatalog().hdp.df
-    if not ((hdp_df["network_id"] == network_id) & (hdp_df["station_id"] == station_id)).any():
-        raise ValueError(
-            f"station_label '{station_label}' did not resolve to a valid HDP station "
-            f"(got '{station_id}'). Available labels: {sorted(stations['ID'].unique())}."
-        )
+    in_network = set(hdp_df.loc[hdp_df["network_id"] == network_id, "station_id"])
+
+    station_id = _resolve_legacy_asos(station_label) if network_id == HDP_NETWORK_ID else None
+    if station_id not in in_network:
+        ids = isd_candidates(load_isd_history(), hdp_df, network_id, icao=station_label)
+        if not ids:
+            raise ValueError(f"station_label '{station_label}' has no {network_id} station in HDP. "
+                             f"Try the other network, or leave station_label empty to search "
+                             f"location.clip for one.")
+        station_id = ids[0] if len(ids) == 1 else longest_pr_record(ids, network_id)
     print(f"Resolved '{station_label}' -> network_id={network_id!r}, station_id={station_id!r}")
     return station_id
+
+
+def county_boundary(clip):
+    """California county polygon (lon/lat) for a clip name like 'Sacramento County'."""
+    counties = gpd.read_file(COUNTIES_URL)
+    county = counties[(counties["STATEFP"] == "06")
+                      & (counties["NAME"] == clip.removesuffix(" County"))]
+    if county.empty:
+        raise ValueError(f"'{clip}' isn't a California county name")
+    return county.to_crs("EPSG:4326").union_all()
+
+
+def find_station_in_area(area, network_id=HDP_NETWORK_ID):
+    """HDP station_id of the `network_id` station inside `area` (shapely geometry in
+    lon/lat, e.g. county_boundary(cfg.clip)) with the longest `pr` record."""
+    from climakitae.new_core.data_access.data_access import DataCatalog
+
+    ids = isd_candidates(load_isd_history(), DataCatalog().hdp.df, network_id, area=area)
+    if not ids:
+        raise ValueError(f"No {network_id} stations inside the area")
+    station_id = longest_pr_record(ids, network_id)
+    print(f"Longest {network_id} pr record of {len(ids)} stations in the area: {station_id!r}")
+    return station_id
+
+
+def station_icao(station_id):
+    """ICAO code for an HDP ISD station_id from NOAA's station list ('' if it has none)."""
+    isd = load_isd_history()
+    icao = isd.loc[isd["number"] == station_id.split("_", 1)[-1], "ICAO"].dropna()
+    return icao.iloc[0] if len(icao) else ""
 
 
 def pull_hdp_station(station_id, network_id=HDP_NETWORK_ID):
@@ -317,8 +424,10 @@ def wet_day_nday_threshold(daily, n, percentile, wet_day_in, dim):
 
 def nday_events(daily, n, threshold, dim):
     """Number of distinct events whose n-day total exceeds `threshold` along `dim`.
-    Back-to-back qualifying days are one event (see count_events)."""
-    return count_events(nday_totals(daily, n, dim) > threshold, dim)
+    Back-to-back qualifying days are one event (see count_events). Cells with no
+    data at all (e.g. WRF cells outside the clip area) stay NaN instead of 0."""
+    events = count_events(nday_totals(daily, n, dim) > threshold, dim)
+    return events.where(daily.notnull().any(dim))
 
 
 def water_year(time):
@@ -407,7 +516,10 @@ def reproject_to_tracts(da, tracts):
     filled = missing_c.sjoin_nearest(valid_c, how="left")
     filled = filled[["geometry_left", f"{name}_right"]].rename(
         columns={"geometry_left": "geometry", f"{name}_right": name})
-    return pd.concat([valid, gpd.GeoDataFrame(filled, geometry="geometry", crs=valid.crs)])
+    filled = filled[~filled.index.duplicated()]   # ties: one row per tract
+    out = pd.concat([valid, gpd.GeoDataFrame(filled, geometry="geometry", crs=valid.crs)])
+    out.index.name = "GEOID"   # concat drops the index name when the parts differ
+    return out
 
 
 def tract_metric_layers(gridded, metric, tracts, cfg):
@@ -657,7 +769,11 @@ def _simplified_geojson(gdf, simplify_tol=SIMPLIFY_TOL):
 
 def tabbed_choropleth(layers, value_col, title, name, cfg, tracts, zip_labels, zip_codes,
                       hover_label=None, colorbar_title="# of Days", colorscale="YlOrRd"):
-    """One tab per GWL showing `value_col` per tract; saved via save_figure(name)."""
+    """One tab per GWL showing `value_col` per tract; saved via save_figure(name).
+    Only tracts whose centroid is inside the zip-code area are drawn."""
+    tracts = tracts_inside_area(tracts, zip_codes)
+    inner = set(tracts["GEOID"])
+    layers = {g: layers[g][layers[g]["GEOID"].isin(inner)] for g in cfg.gwl_order}
     vmax = max(layers[g][value_col].max() for g in cfg.gwl_order)
     geojson = _simplified_geojson(tracts)
     traces = [go.Choropleth(
@@ -678,9 +794,11 @@ def tabbed_choropleth(layers, value_col, title, name, cfg, tracts, zip_labels, z
     return fig
 
 
-def tabbed_delta_choropleth(deltas, title, name, cfg, zip_labels, zip_codes):
+def tabbed_delta_choropleth(deltas, title, name, cfg, zip_labels, zip_codes,
+                            reversescale=True, ticktext=("Lower <br>Risk", "Higher <br>Risk")):
     """One tab per non-baseline GWL showing the change vs. the baseline GWL.
-    Only tracts whose centroid is inside the zip-code area are drawn."""
+    Only tracts whose centroid is inside the zip-code area are drawn.
+    ticktext labels the (bottom, top) of the colorbar."""
     deltas = {k: tracts_inside_area(d, zip_codes) for k, d in deltas.items()}
     keys = list(deltas)
     vmax = max(np.nanmax(np.abs(deltas[k]["delta"])) for k in keys) or 1
@@ -688,10 +806,10 @@ def tabbed_delta_choropleth(deltas, title, name, cfg, zip_labels, zip_codes):
     traces = [go.Choropleth(
         geojson=geojson, featureidkey="properties.GEOID",
         locations=deltas[k]["GEOID"], z=deltas[k]["delta"],
-        zmin=-vmax, zmax=vmax, colorscale="RdBu", reversescale=True,
+        zmin=-vmax, zmax=vmax, colorscale="RdBu", reversescale=reversescale,
         marker=dict(line=dict(color="#cccccc", width=0.4)),
         colorbar=dict(tickmode="array", tickvals=[-0.75 * vmax, 0.75 * vmax],
-                      ticktext=["Lower <br>Risk", "Higher <br>Risk"], tickfont=dict(size=14),
+                      ticktext=list(ticktext), tickfont=dict(size=14),
                       thickness=20, len=0.7, x=1.0, xanchor="left"),
         name=cfg.gwl_labels[k],
         customdata=deltas[k]["GEOID"].map(zip_labels),

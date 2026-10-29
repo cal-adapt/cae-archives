@@ -9,7 +9,9 @@ hazard: precip                   # heat | precip — picks heat_event.ipynb / pr
 event_name: "Sacramento October 2021 Atmospheric River"
 
 location:
-  station_label: "KSAC"          # ICAO code; resolved to an HDP station automatically
+  station_label: "KSMF"          # airport code; leave empty to use the station with the
+                                 # longest precip record inside `clip`
+  network_id: OtherISD           # HDP network: ASOSAWOS (default) | OtherISD
   place_name: "Sacramento"       # used in titles and output filenames
   clip: "Sacramento County"      # WRF clip region (a climakitae boundary key)
   zip_shapefile: "sac_zipcodes.zip"  # zip codes covering the map area (needs ZIP5, PO_NAME)
@@ -28,6 +30,11 @@ thresholds:
       percentile: 0.99           # of the N-day totals that end on a wet day
                                  # station: from the HDP record; projections: per simulation +
                                  # grid cell at baseline_warming_level
+                                 # Or a fixed amount instead of percentile, e.g.:
+                                 #   - id: 3day_6in
+                                 #     label: "3-day rainfall above 6 inches"
+                                 #     accumulation_days: 3
+                                 #     threshold_in: 6
 
 projection:
   warming_levels: [0.8, 1.5, 2.0]

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Create or run a relevant-hazard post folder.
+# Create a relevant-hazard post folder.
 #
 # Usage (from guidance-website/blog/):
-#   ../relevant-hazard-template/run_event.sh <post_folder> --new heat|precip   create the post folder
-#   ../relevant-hazard-template/run_event.sh <post_folder>                     run its notebook
+#   ../relevant-hazard-template/run_event.sh <post_folder> --new heat|precip
 #
 # A post folder is ready to copy as-is into cal-adapt-guidance/blog/posts/:
 #
@@ -17,15 +16,13 @@
 #       ├── <zip-code shapefile>.zip
 #       └── crai_layers/    written by the notebook
 #
-# Running executes _analysis/<hazard>_event.ipynb in place (outputs saved into it) under
-# the climakitae conda env. You can also just open that notebook in VS Code and Run All.
+# Then open _analysis/<hazard>_event.ipynb in VS Code (climakitae kernel) and Run All.
 set -euo pipefail
 
 FRAMEWORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-USAGE="Usage: run_event.sh <post_folder> [--new heat|precip]"
+USAGE="Usage: run_event.sh <post_folder> --new heat|precip"
 POST_ARG="${1:?$USAGE}"
 shift
-CONDA_ENV="${CONDA_ENV:-climakitae}"
 
 new_post() {
   local hazard="$1"
@@ -53,44 +50,9 @@ new_post() {
   echo "Next: add a zip-code shapefile to _analysis/ and set location.zip_shapefile to its name."
 }
 
-run_notebook() {
-  local analysis="$POST_ARG/_analysis"
-  local config="$analysis/event_config.yaml"
-  if [[ ! -f "$config" ]]; then
-    echo "No $config — create the post first with: run_event.sh $POST_ARG --new heat|precip" >&2
-    exit 1
-  fi
-  analysis="$(cd "$analysis" && pwd)"
-  config="$analysis/event_config.yaml"
-
-  local hazard
-  hazard="$(sed -n 's/^hazard:[[:space:]]*\([a-z]*\).*/\1/p' "$config")"
-  if [[ -z "$hazard" ]]; then
-    echo "No 'hazard:' key found in $config" >&2
-    exit 1
-  fi
-  local notebook="$analysis/${hazard}_event.ipynb"
-  if [[ ! -f "$notebook" ]]; then
-    cp "$FRAMEWORK_DIR/${hazard}_event.ipynb" "$notebook"
-    echo "Copied ${hazard}_event.ipynb into $analysis"
-  fi
-  if [[ ! -f "$FRAMEWORK_DIR/crai_cache/adaptive_capacity.csv" ]]; then
-    echo "Warning: $FRAMEWORK_DIR/crai_cache/ is empty — run crai_base.ipynb first or Part 5 will fail." >&2
-  fi
-
-  export EVENT_CONFIG="$config"
-  export EVENT_FRAMEWORK_DIR="$FRAMEWORK_DIR"
-  export PYTHONPATH="$FRAMEWORK_DIR/helpers${PYTHONPATH:+:$PYTHONPATH}"
-
-  echo "Running $notebook (conda env: $CONDA_ENV)"
-  (cd "$analysis" && conda run -n "$CONDA_ENV" jupyter execute --inplace "$notebook")
-}
-
 case "${1:-}" in
   --new)
     new_post "${2:?$USAGE}" ;;
-  "")
-    run_notebook ;;
   *)
-    echo "Unknown option: $1" >&2; echo "$USAGE" >&2; exit 1 ;;
+    echo "$USAGE" >&2; exit 1 ;;
 esac

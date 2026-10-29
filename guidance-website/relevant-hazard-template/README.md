@@ -1,5 +1,5 @@
 # Relevant Hazard Post Generation
-(last updated: 10/26/26)
+(last updated: 10/28/26)
 
 Hi there! This README walks you through how to generate a new relevant hazard post for a specific event of interest. This currently supports two types of events: **extreme heat and extreme precipitation.**
 
@@ -13,7 +13,7 @@ guidance-website/
 │   ├── precip_event.ipynb             per-event notebook for extreme precipitation
 │   ├── precip_index_template.qmd      starting index.qmd for a precip post
 │   ├── crai_base.ipynb                one-time statewide CRAI inputs → crai_cache/
-│   ├── run_event.sh                   creates a post folder (--new heat|precip) or runs its notebook
+│   ├── run_event.sh                   creates a post folder (--new heat|precip)
 │   ├── helpers/
 │   │   ├── event_helpers.py           shared by the event notebooks
 │   │   └── crai_helpers.py            Cal-CRAI calculation functions
@@ -21,6 +21,8 @@ guidance-website/
 │   │   ├── crai_base.yaml             local/S3 toggle for crai_base.ipynb
 │   │   ├── heat_sacramento_2020.yaml  worked example heat config (Aug and Sept 2020 Sac heatwaves)
 │   │   └── precip_sacramento_2021.yaml  worked example precip config (Oct 2021 Sac atmospheric river)
+│   ├── diagnostics/                   notebooks documenting HDP precipitation problems
+│   ├── tests/                         offline tests for helpers/event_helpers.py
 │   ├── crai_seed/                     local snapshot of the statewide CRAI inputs (see its README)
 │   └── crai_cache/                    built by crai_base.ipynb (git-ignored)
 └── blog/
@@ -35,9 +37,11 @@ guidance-website/
 | `helpers/event_helpers.py` | Code shared by the event notebooks: config + output filenames, station and WRF pulls, event counting, tract mapping, CRAI scores, figures |
 | `helpers/crai_helpers.py` | Cal-CRAI calculation functions (merged from era-scratch `file_helpers.py` + `calc_*.py`) |
 | `heat_index_template.qmd`, `precip_index_template.qmd` | Starting `index.qmd` for a post, with every notebook figure already embedded (HTML + mobile/PDF/DOCX PNGs) |
-| `run_event.sh` | `--new heat\|precip` creates a post folder; with no option, runs its notebook under the `climakitae` env |
+| `run_event.sh` | `--new heat\|precip` creates a post folder |
 | `configs/crai_base.yaml` | `source: local` (build from `crai_seed/`) or `source: s3` (real refresh from S3) |
 | `configs/heat_sacramento_2020.yaml`, `configs/precip_sacramento_2021.yaml` | Worked example event configs — `--new` copies one into the post |
+| `diagnostics/` | HDP precipitation checks: `hdp_precip_issues.ipynb` (double counting at KSAC vs NOAA's daily record), `UPDATED_hdp_precip_issues.ipynb` (same checks for OtherISD stations), `hdp_precip_total.ipynb` (precip by hour of day) |
+| `tests/` | Offline pytest tests on synthetic data — see "Tests" below |
 | `crai_seed/` | Snapshot CRAI inputs + the Cal-CRAI metric list (`cava_calcrai_metrics.csv`) |
 | `crai_cache/` | Built by `crai_base.ipynb` (git-ignored) |
 
@@ -112,7 +116,8 @@ guidance-website/blog/<post>/
 ## Config files
 
 Each post's `_analysis/event_config.yaml` starts as a copy of one of the two worked
-examples in `configs/`. Both examples share the same top half and diff on their `thresholds:` sections.
+examples in `configs/`. Both share the settings below and differ in their `thresholds:`
+sections (heat also sets `projection.percentile`).
 
 ### Shared settings
 
@@ -121,7 +126,8 @@ hazard: heat                       # heat | precip — picks the notebook and po
 event_name: "Sacramento 2020"
 
 location:
-  station_label: "KSAC"            # airport code of the HDP weather station
+  station_label: "KSAC"            # airport code of the HDP weather station (precip: may be empty)
+  network_id: ASOSAWOS             # optional: ASOSAWOS (default) | OtherISD
   place_name: "Sacramento"         # used in titles and file names
   clip: "Sacramento County"        # area the WRF projections are cut to
   zip_shapefile: "sac_zipcodes.zip"  # zip codes for the maps (in _analysis/)
@@ -170,11 +176,38 @@ thresholds:
       label: "3-day rainfall above the 99th percentile"
       accumulation_days: 3         # rolling window (days)
       percentile: 0.99             # of N-day totals ending on a wet day
+    - id: 3day_6in                 # or a fixed amount instead of a percentile
+      label: "3-day rainfall above 6 inches"
+      accumulation_days: 3
+      threshold_in: 6
 ```
 
-An event is a stretch of days whose N-day total exceeds the threshold. Back-to-back
-qualifying days count once. The station threshold comes from the HDP record, and future events are counted as precipitation thresholds above the historical percentile amount per simulation and gridcell.
+An event is a stretch of days whose N-day total exceeds the threshold; back-to-back
+qualifying days count once. Each entry uses one of:
+- `percentile`: the station threshold comes from the HDP record, and the projections use a
+  threshold calibrated per simulation and grid cell at `baseline_warming_level`. This removes
+  model wet/dry bias, so the baseline map is near-uniform and the change across warming
+  levels is the signal.
+- `threshold_in`: the same amount for the station and every grid cell. Maps show where that
+  amount is reached most often, but model bias is kept.
 
+The precip example uses Sacramento International (`KSMF`) from the `OtherISD` network. If
+you don't know a station's airport code, leave `station_label` empty: the notebook then uses
+the station in `network_id` inside `clip` (a county) with the longest precipitation record.
+One airport code can have several station IDs in a network (they get renumbered when a
+station moves); the one with the longest precipitation record is used.
+
+Station precipitation is HDP `pr` used as-is. HDP double-counts some reports, so station
+totals run high; see `diagnostics/`.
+
+
+## Tests
+
+Offline tests (synthetic data, no network) for `helpers/event_helpers.py`. From
+`guidance-website/`:
+```bash
+conda run -n climakitae pytest relevant-hazard-template/tests
+```
 
 ## Data flow
 
