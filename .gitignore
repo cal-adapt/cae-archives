@@ -12,3 +12,7 @@ __pycache__
 # ignore figures
 *.html
 *.png
+
+# statewide CRAI inputs built by crai_base.ipynb (large, regenerable)
+guidance-website/relevant-hazard-template/crai_cache/
+guidance-website/relevant-hazard-template/crai_seed/ca_tracts.gpkg
