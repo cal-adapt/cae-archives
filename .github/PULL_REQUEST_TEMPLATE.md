@@ -15,8 +15,3 @@
 
 ## Output Management
 - [ ] Output from cells removed before committing
-
-## Code Quality
-- [ ] Notebook cleaned up with:
-  - [ ] black
-  - [ ] isort
