@@ -217,9 +217,9 @@ conda run -n climakitae pytest relevant-hazard-template/tests
 ```
 crai_base.ipynb (rarely)                  heat_event.ipynb / precip_event.ipynb (per post)
   crai_seed/ (local) or S3 (refresh)        Part 1  Observed event (HDP station)
-  statewide tracts                          Part 2  Historical context
-  adaptive-capacity domain scores           Part 3  Return period (WRF, pulled once)
-  standardized climate metrics              Part 4  Event metrics → census tracts
+  adaptive-capacity domain scores           Part 2  Historical context
+  standardized climate metrics              Part 3  Return period (WRF, pulled once)
+                                            Part 4  Event metrics → census tracts (census.gov)
         └──▶ crai_cache/ ──────────────▶    Part 5  Hazard score + CRAI index
                                             Part 6–7 Narrative (TODO)
                                                     │

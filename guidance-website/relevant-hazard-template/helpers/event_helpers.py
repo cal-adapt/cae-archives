@@ -437,8 +437,8 @@ def water_year(time):
 # ===========================================================================
 # Census tracts
 # ===========================================================================
-CENSUS_TRACTS_S3 = "s3://ca-climate-index/0_map_data/2021_tiger_census_tract/2021_ca_tract/"
-TRACTS_CACHE_FILE = "ca_tracts.gpkg"
+# Statewide census tracts (2021 TIGER/Line, California) — public, read straight from census.gov
+CA_TRACTS_URL = "https://www2.census.gov/geo/tiger/TIGER2021/TRACT/tl_2021_06_tract.zip"
 
 
 def load_zip_codes(path):
@@ -446,8 +446,8 @@ def load_zip_codes(path):
 
 
 def tracts_in_area(cfg, zip_codes):
-    """Statewide tracts (from the CRAI cache) that intersect the zip-code area."""
-    tracts = gpd.read_file(os.path.join(cfg.crai_cache_dir, TRACTS_CACHE_FILE))
+    """Statewide tracts (from census.gov) that intersect the zip-code area."""
+    tracts = gpd.read_file(CA_TRACTS_URL)
     tracts["GEOID"] = tracts["GEOID"].astype(str).str.zfill(11)
     tracts = tracts.to_crs("EPSG:4326")
     area = zip_codes.union_all()
