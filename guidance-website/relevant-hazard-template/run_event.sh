@@ -41,13 +41,16 @@ new_post() {
   cp "$FRAMEWORK_DIR/${hazard}_index_template.qmd" "$POST_ARG/index.qmd"
   cp "$example" "$POST_ARG/_analysis/event_config.yaml"
   cp "$FRAMEWORK_DIR/${hazard}_event.ipynb" "$POST_ARG/_analysis/"
+  cp "$FRAMEWORK_DIR/configs/"*.zip "$POST_ARG/_analysis/"   # example zip-code shapefile
 
   echo "Created $POST_ARG/ for a $hazard post:"
   echo "  index.qmd                       write the post here"
   echo "  images/                         put photos here"
   echo "  _analysis/event_config.yaml     edit for your event (copied from $(basename "$example"))"
   echo "  _analysis/${hazard}_event.ipynb     run after editing the config"
-  echo "Next: add a zip-code shapefile to _analysis/ and set location.zip_shapefile to its name."
+  echo "  _analysis/sac_zipcodes.zip      example zip codes (Sacramento) — replace for another area"
+  echo "Next: edit event_config.yaml; for a new area, add its zip-code shapefile to _analysis/"
+  echo "and set location.zip_shapefile to its name."
 }
 
 case "${1:-}" in

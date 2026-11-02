@@ -395,14 +395,13 @@ def count_events(mask, dim, min_length=1):
 
 
 # ===========================================================================
-# Precipitation (shared by precip_event.ipynb and diagnostics/hdp_precip_issues.ipynb)
+# Precipitation (used by precip_event.ipynb)
 # ===========================================================================
 def hdp_daily_precip_in(station):
     """Daily precipitation totals in inches from an HDP station's hourly `pr` (mm).
     Days with no reports at all stay NaN rather than becoming 0.
 
-    Uses HDP `pr` as-is — see diagnostics/hdp_precip_issues.ipynb for the
-    double counting this inherits.
+    Uses HDP `pr` as-is, so it inherits HDP's double counting of some reports.
     """
     return station["pr"].resample(time="D").sum(min_count=1) / 25.4
 

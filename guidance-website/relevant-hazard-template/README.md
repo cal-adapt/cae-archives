@@ -20,8 +20,8 @@ guidance-website/
 │   ├── configs/
 │   │   ├── crai_base.yaml             local/S3 toggle for crai_base.ipynb
 │   │   ├── heat_sacramento_2020.yaml  worked example heat config (Aug and Sept 2020 Sac heatwaves)
-│   │   └── precip_sacramento_2021.yaml  worked example precip config (Oct 2021 Sac atmospheric river)
-│   ├── diagnostics/                   notebooks documenting HDP precipitation problems
+│   │   ├── precip_sacramento_2021.yaml  worked example precip config (Oct 2021 Sac atmospheric river)
+│   │   └── sac_zipcodes.zip           example zip-code shapefile (Sacramento), copied by --new
 │   ├── tests/                         offline tests for helpers/event_helpers.py
 │   ├── crai_seed/                     local snapshot of the statewide CRAI inputs (see its README)
 │   └── crai_cache/                    built by crai_base.ipynb (git-ignored)
@@ -40,7 +40,7 @@ guidance-website/
 | `run_event.sh` | `--new heat\|precip` creates a post folder |
 | `configs/crai_base.yaml` | `source: local` (build from `crai_seed/`) or `source: s3` (real refresh from S3) |
 | `configs/heat_sacramento_2020.yaml`, `configs/precip_sacramento_2021.yaml` | Worked example event configs — `--new` copies one into the post |
-| `diagnostics/` | HDP precipitation checks: `hdp_precip_issues.ipynb` (double counting at KSAC vs NOAA's daily record), `UPDATED_hdp_precip_issues.ipynb` (same checks for OtherISD stations), `hdp_precip_total.ipynb` (precip by hour of day) |
+| `configs/sac_zipcodes.zip` | Sacramento zip codes used by both worked examples — `--new` copies it into the post |
 | `tests/` | Offline pytest tests on synthetic data — see "Tests" below |
 | `crai_seed/` | Snapshot CRAI inputs + the Cal-CRAI metric list (`cava_calcrai_metrics.csv`) |
 | `crai_cache/` | Built by `crai_base.ipynb` (git-ignored) |
@@ -60,12 +60,15 @@ guidance-website/
    ../relevant-hazard-template/run_event.sh 2027-07-01-fresno-extreme-heat --new heat
    ```
    Use `--new precip` for a precip post. This sets up `index.qmd`, an empty `images/`
-   folder, and an `_analysis/` folder holding `event_config.yaml` and the notebook.
+   folder, and an `_analysis/` folder holding `event_config.yaml`, the notebook, and the
+   example `sac_zipcodes.zip`.
 
 3. **Edit the config**
 
-   Edit `_analysis/event_config.yaml` for your event (see "Config files" below), and put a
-   zip-code shapefile covering the map area in `_analysis/`.
+   Edit `_analysis/event_config.yaml` for your event (see "Config files" below). For a place
+   outside Sacramento, put a zip-code shapefile covering the map area in `_analysis/` and set
+   `location.zip_shapefile` to its file name. It needs a `ZIP5` (zip code) and `PO_NAME`
+   (place name) column; the maps cover the census tracts inside its outline.
 
 4. **Run the notebook**
 
@@ -198,7 +201,7 @@ One airport code can have several station IDs in a network (they get renumbered 
 station moves); the one with the longest precipitation record is used.
 
 Station precipitation is HDP `pr` used as-is. HDP double-counts some reports, so station
-totals run high; see `diagnostics/`.
+totals run high.
 
 
 ## Tests
