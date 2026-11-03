@@ -539,18 +539,51 @@ def tract_metric_layers(gridded, metric, tracts, cfg):
 
 
 # ===========================================================================
-# CRAI (hazard score + index) — reads what crai_base.ipynb cached
+# CRAI (hazard score + index) — statewide inputs cached in crai_cache/
 # ===========================================================================
 ADAPTIVE_CAPACITY_FILE = "adaptive_capacity.csv"
 CLIMATE_METRICS_FILE = "climate_metrics_standardized.csv"
+CRAI_DOMAIN_COLS = ["governance_domain_score", "built_domain_score",
+                    "natural_domain_score", "society_domain_score"]
+
+
+def write_crai_cache(adaptive_capacity, climate_raw, cache_dir=DEFAULT_CRAI_CACHE):
+    """Write the two cached tables: adaptive-capacity domain scores per tract, and every
+    climate metric min-max standardized statewide."""
+    os.makedirs(cache_dir, exist_ok=True)
+    adaptive = adaptive_capacity[["GEOID"] + CRAI_DOMAIN_COLS].copy()
+    adaptive["GEOID"] = adaptive["GEOID"].astype(str).str.zfill(11)
+    adaptive.to_csv(os.path.join(cache_dir, ADAPTIVE_CAPACITY_FILE), index=False)
+
+    climate = climate_raw.copy()
+    climate["GEOID"] = climate["GEOID"].astype(str).str.zfill(11)
+    climate = climate.sort_values(by="GEOID")
+    climate = crai_helpers.min_max_standardize(climate, [c for c in climate.columns if c != "GEOID"])
+    climate.to_csv(os.path.join(cache_dir, CLIMATE_METRICS_FILE), index=False)
+
+    print(f"Wrote {cache_dir}: adaptive_capacity {len(adaptive)} tracts "
+          f"({adaptive[CRAI_DOMAIN_COLS].isna().sum().sum()} missing scores), "
+          f"climate metrics {len(climate)} tracts")
+
+
+def build_crai_cache_from_seed(cache_dir=DEFAULT_CRAI_CACHE):
+    """Build crai_cache/ from the snapshot files in crai_seed/ (the paths under `local:`
+    in configs/crai_base.yaml). Takes seconds, no AWS."""
+    with open(os.path.join(FRAMEWORK_DIR, "configs", "crai_base.yaml")) as f:
+        local = yaml.safe_load(f)["local"]
+    seed = lambda key: os.path.join(FRAMEWORK_DIR, local[key])
+    write_crai_cache(pd.read_csv(seed("adaptive_capacity"), dtype={"GEOID": str}),
+                     pd.read_csv(seed("climate_metrics"), dtype={"GEOID": str}),
+                     cache_dir)
 
 
 def load_crai_cache(cfg):
-    """(adaptive_capacity, climate_metrics) DataFrames from crai_base.ipynb's cache."""
+    """(adaptive_capacity, climate_metrics) DataFrames from the CRAI cache. Builds the
+    cache from crai_seed/ first if it doesn't exist yet."""
     paths = [os.path.join(cfg.crai_cache_dir, f) for f in (ADAPTIVE_CAPACITY_FILE, CLIMATE_METRICS_FILE)]
-    missing = [p for p in paths if not os.path.exists(p)]
-    if missing:
-        raise FileNotFoundError(f"CRAI cache incomplete — run crai_base.ipynb first. Missing: {missing}")
+    if not all(os.path.exists(p) for p in paths):
+        print("No CRAI cache yet — building it from crai_seed/ (one time)")
+        build_crai_cache_from_seed(cfg.crai_cache_dir)
     adaptive, climate = (pd.read_csv(p, dtype={"GEOID": str}) for p in paths)
     for df in (adaptive, climate):
         df["GEOID"] = df["GEOID"].str.zfill(11)

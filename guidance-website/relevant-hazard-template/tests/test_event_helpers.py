@@ -210,6 +210,20 @@ def test_filter_simulations_renames_simulation_dim():
 
 
 # ---------------------------------------------------------------------------
+# CRAI cache
+# ---------------------------------------------------------------------------
+def test_load_crai_cache_builds_missing_cache_from_seed(tmp_path):
+    class Cfg:
+        crai_cache_dir = str(tmp_path / "crai_cache")
+    adaptive, climate = eh.load_crai_cache(Cfg())
+    assert os.path.exists(os.path.join(Cfg.crai_cache_dir, eh.ADAPTIVE_CAPACITY_FILE))
+    assert list(adaptive.columns) == ["GEOID"] + eh.CRAI_DOMAIN_COLS
+    assert adaptive["GEOID"].str.len().eq(11).all()
+    std = [c for c in climate.columns if c.endswith("_min_max_standardized")]
+    assert std and climate[std].min().min() >= 0 and climate[std].max().max() <= 1
+
+
+# ---------------------------------------------------------------------------
 # tracts
 # ---------------------------------------------------------------------------
 def test_tracts_inside_area_drops_edge_tracts():

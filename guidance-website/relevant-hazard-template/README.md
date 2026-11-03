@@ -12,7 +12,7 @@ guidance-website/
 │   ├── heat_index_template.qmd        starting index.qmd for a heat post
 │   ├── precip_event.ipynb             per-event notebook for extreme precipitation
 │   ├── precip_index_template.qmd      starting index.qmd for a precip post
-│   ├── crai_base.ipynb                one-time statewide CRAI inputs → crai_cache/
+│   ├── crai_base.ipynb                rebuilds crai_cache/ (S3 refresh)
 │   ├── run_event.sh                   creates a post folder (--new heat|precip)
 │   ├── helpers/
 │   │   ├── event_helpers.py           shared by the event notebooks
@@ -24,7 +24,7 @@ guidance-website/
 │   │   └── sac_zipcodes.zip           example zip-code shapefile (Sacramento), copied by --new
 │   ├── tests/                         offline tests for helpers/event_helpers.py
 │   ├── crai_seed/                     local snapshot of the statewide CRAI inputs (see its README)
-│   └── crai_cache/                    built by crai_base.ipynb (git-ignored)
+│   └── crai_cache/                    built automatically from crai_seed/ (git-ignored)
 └── blog/
     └── <post>/                        one folder per post — copy it whole into cal-adapt-guidance/blog/posts/
 ```
@@ -33,7 +33,7 @@ guidance-website/
 |---|---|
 | `heat_event.ipynb` | Per-event notebook for extreme heat (copied into each post's `_analysis/`) |
 | `precip_event.ipynb` | Per-event notebook for extreme precipitation (station precip is HDP `pr` used as-is) |
-| `crai_base.ipynb` | One-time statewide CRAI inputs → `crai_cache/` (rerun only when Cal-CRAI source data changes) |
+| `crai_base.ipynb` | Rebuilds `crai_cache/`, e.g. a refresh from S3 when Cal-CRAI source data changes |
 | `helpers/event_helpers.py` | Code shared by the event notebooks: config + output filenames, station and WRF pulls, event counting, tract mapping, CRAI scores, figures |
 | `helpers/crai_helpers.py` | Cal-CRAI calculation functions (merged from era-scratch `file_helpers.py` + `calc_*.py`) |
 | `heat_index_template.qmd`, `precip_index_template.qmd` | Starting `index.qmd` for a post, with every notebook figure already embedded (HTML + mobile/PDF/DOCX PNGs) |
@@ -43,15 +43,15 @@ guidance-website/
 | `configs/sac_zipcodes.zip` | Sacramento zip codes used by both worked examples — `--new` copies it into the post |
 | `tests/` | Tests to confirm accuracy and runnability of helper functions |
 | `crai_seed/` | Snapshot CRAI inputs + the Cal-CRAI metric list (`cava_calcrai_metrics.csv`) |
-| `crai_cache/` | Built by `crai_base.ipynb` (git-ignored) |
+| `crai_cache/` | Statewide CRAI tables, built automatically from `crai_seed/` on the first run (git-ignored) |
 
 ## Start a new post
 
-1. **Build the CRAI cache** (once per machine, or when the Cal-CRAI data changes)
+1. **CRAI cache** (automatic)
 
-   Run `guidance-website/relevant-hazard-template/crai_base.ipynb`. With
-   `configs/crai_base.yaml` at `source: local` it builds `crai_cache/` from `crai_seed/` in
-   seconds; `source: s3` re-downloads and recomputes everything (needs AWS credentials).
+   The first event notebook you run builds `crai_cache/` from `crai_seed/` in a few seconds;
+   later runs reuse it. Run `crai_base.ipynb` only for a real refresh from S3
+   (`source: s3` in `configs/crai_base.yaml`, needs AWS credentials).
 
 2. **Create the post folder**
 
@@ -245,8 +245,8 @@ conda run -n climakitae pytest relevant-hazard-template/tests
 ## Data flow
 
 ```
-crai_base.ipynb (rarely)                  heat_event.ipynb / precip_event.ipynb (per post)
-  crai_seed/ (local) or S3 (refresh)        Part 1  Observed event (HDP station)
+crai_seed/ → crai_cache/ (first run)      heat_event.ipynb / precip_event.ipynb (per post)
+  (or crai_base.ipynb for an S3 refresh)   Part 1  Observed event (HDP station)
   adaptive-capacity domain scores           Part 2  Historical context
   standardized climate metrics              Part 3  Return period (WRF, pulled once)
                                             Part 4  Event metrics → census tracts (census.gov)
