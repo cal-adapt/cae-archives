@@ -39,9 +39,9 @@ guidance-website/
 | `heat_index_template.qmd`, `precip_index_template.qmd` | Starting `index.qmd` for a post, with every notebook figure already embedded (HTML + mobile/PDF/DOCX PNGs) |
 | `run_event.sh` | `--new heat\|precip` creates a post folder |
 | `configs/crai_base.yaml` | `source: local` (build from `crai_seed/`) or `source: s3` (real refresh from S3) |
-| `configs/heat_sacramento_2020.yaml`, `configs/precip_sacramento_2021.yaml` | Worked example event configs — `--new` copies one into the post |
+| `configs/heat_sacramento_2020.yaml`, `configs/precip_sacramento_2021.yaml` | Worked example event configs. `--new` copies one into the post |
 | `configs/sac_zipcodes.zip` | Sacramento zip codes used by both worked examples — `--new` copies it into the post |
-| `tests/` | Offline pytest tests on synthetic data — see "Tests" below |
+| `tests/` | Tests to confirm accuracy and runnability of helper functions |
 | `crai_seed/` | Snapshot CRAI inputs + the Cal-CRAI metric list (`cava_calcrai_metrics.csv`) |
 | `crai_cache/` | Built by `crai_base.ipynb` (git-ignored) |
 
@@ -65,7 +65,7 @@ guidance-website/
 
 3. **Edit the config**
 
-   Edit `_analysis/event_config.yaml` for your event — see "Setting up a new event" below.
+   Edit `_analysis/event_config.yaml` for your event. See "Setting up a new event" below.
 
 4. **Run the notebook**
 
@@ -116,16 +116,11 @@ guidance-website/blog/<post>/
 
 ## Setting up a new event
 
-Go through `_analysis/event_config.yaml` top to bottom. The worked example it was copied
-from is filled in for Sacramento, so change every value that doesn't fit your event.
+Go through `_analysis/event_config.yaml` top to bottom. The worked example it was copied from is filled in for Sacramento, so change every entry that doesn't fit your event.
 
-- **`event_name`, `place_name`**: free text used in titles. `place_name` also goes into
-  output file names.
-- **`station_label`**: the airport's 4-letter code (`K` + its 3-letter code, e.g. `KFAT` for
-  Fresno). Leave it empty to use the station inside `clip` with the longest record. If the
-  code isn't in HDP, Part 1 stops with an error.
-- **`network_id`**: `ASOSAWOS` (default) or `OtherISD`. Some airports are only in one of
-  them; if your code isn't found, try the other.
+- **`event_name`, `place_name`**: free text used in titles. `place_name` also goes into output file names.
+- **`station_label`**: the airport's 4-letter code (`K` + its 3-letter code, e.g. `KFAT` for Fresno). Leave it empty to use the station inside `clip` with the longest record. If the code isn't in HDP, Part 1 stops with an error.
+- **`network_id`**: `ASOSAWOS` (default) or `OtherISD`. Some airports are only in one of them. If your code isn't found, try the other.
 - **`clip`**: the county, written `"<Name> County"` (e.g. `"Fresno County"`). The WRF
   projections are cut to it, and an empty `station_label` searches it for a station.
 - **`zip_shapefile`**: a zip-code shapefile (`.zip`) covering the area to map, placed in
@@ -141,11 +136,12 @@ from is filled in for Sacramento, so change every value that doesn't fit your ev
 - **`event.year`, `event.windows`**: the event year and a `[start, end]` pair per
   heat wave or storm (both dates included).
 - **Thresholds**: what counts as an event at this place (see "Config files" below for each
-  setting). Run Part 1 first with a first guess. It prints the station's record dates —
-  check they cover your event — and each window's peak values (heat: peak max temperature
-  and the number of days and nights past the thresholds; precip: total, max 1-day and max
-  N-day rainfall). Adjust the thresholds, then Run All.
-- **`projection`**: leave as is.
+  setting). Run Part 1 first with a first guess. It prints the station's record dates. Check that they cover your event's dates and each window's peak values (heat: peak max temperature and the number of days and nights past the thresholds; precip: total, max 1-day and max N-day rainfall). Adjust the thresholds, then Run All.
+- **`projection`**: the example values work anywhere in California.
+  - `warming_levels`: up to four, lowest first.
+  - `baseline_warming_level`: your baseline WL to compare from.
+  - `sublabels`: one per warming level, or they're dropped. Update `index.qmd` to match.
+  - `exclude_simulations`: keep `EC-Earth3-Veg` while 0.8°C is the baseline (no data there).
 
 **Precip only:** `index.qmd` embeds the figures of the example event `3day_p99`. If your
 config uses a different `id`, replace `3day_p99` with it throughout `index.qmd`. For each
@@ -178,7 +174,7 @@ event:
     - ["2020-09-05", "2020-09-08"]
 
 projection:
-  warming_levels: [0.8, 1.5, 2.0]  # °C; the first is the baseline
+  warming_levels: [0.8, 1.5, 2.0]  # °C
   warming_level_window: 15         # years either side of each warming level
   baseline_warming_level: 0.8
   sublabels: ["Historical", "Today", "Mid-Century"]

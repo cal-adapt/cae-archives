@@ -600,13 +600,13 @@ def crai_scores(hazard, adaptive_capacity):
     return crai_helpers.calculate_CRAI_index(df, clim_col="hazard_score")
 
 
-def deltas_vs_baseline(layers, col, gwl_order):
+def deltas_vs_baseline(layers, col, gwl_order, baseline=None):
     """{gwl: GeoDataFrame with 'delta' = layer[col] - baseline[col]} for every
-    non-baseline GWL (baseline = gwl_order[0])."""
-    base_key = gwl_order[0]
+    non-baseline GWL. `baseline` is a GWL slug (e.g. 'gwl08'); default gwl_order[0]."""
+    base_key = baseline or gwl_order[0]
     base = layers[base_key][["GEOID", col, "geometry"]]
     out = {}
-    for key in gwl_order[1:]:
+    for key in [k for k in gwl_order if k != base_key]:
         merged = base.merge(layers[key][["GEOID", col]], on="GEOID", suffixes=("_base", "_cmp"))
         merged["delta"] = merged[f"{col}_cmp"] - merged[f"{col}_base"]
         out[key] = gpd.GeoDataFrame(merged, geometry="geometry", crs=base.crs)
