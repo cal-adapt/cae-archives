@@ -10,7 +10,9 @@ hazard: heat                     # heat | precip — picks heat_event.ipynb / pr
 event_name: "Sacramento 2020"
 
 location:
-  station_label: "KSAC"          # ICAO code; resolved to an HDP station automatically
+  station_label: "KSAC"          # airport code; leave empty to use the station with the
+                                 # longest temperature record inside `clip`
+  network_id: ASOSAWOS           # HDP network: ASOSAWOS (default) | OtherISD
   place_name: "Sacramento"       # used in titles and output filenames
   clip: "Sacramento County"      # WRF clip region (a climakitae boundary key)
   zip_shapefile: "sac_zipcodes.zip"  # zip codes covering the map area (needs ZIP5, PO_NAME)

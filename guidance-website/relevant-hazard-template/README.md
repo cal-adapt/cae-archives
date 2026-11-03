@@ -1,5 +1,5 @@
 # Relevant Hazard Post Generation
-(last updated: 10/28/26)
+(last updated: 11/2/26)
 
 Hi there! This README walks you through how to generate a new relevant hazard post for a specific event of interest. This currently supports two types of events: **extreme heat and extreme precipitation.**
 
@@ -65,16 +65,14 @@ guidance-website/
 
 3. **Edit the config**
 
-   Edit `_analysis/event_config.yaml` for your event (see "Config files" below). For a place
-   outside Sacramento, put a zip-code shapefile covering the map area in `_analysis/` and set
-   `location.zip_shapefile` to its file name. It needs a `ZIP5` (zip code) and `PO_NAME`
-   (place name) column; the maps cover the census tracts inside its outline.
+   Edit `_analysis/event_config.yaml` for your event — see "Setting up a new event" below.
 
 4. **Run the notebook**
 
    Open `_analysis/heat_event.ipynb` (or `precip_event.ipynb`) in VS Code with the
-   `climakitae` kernel and Run All. The figures are saved to `<post>/figures/`, where
-   `index.qmd` already expects them.
+   `climakitae` kernel and Run All. It needs an internet connection (HDP station data, WRF
+   projections, census tracts and NOAA's station list are all read remotely). The figures
+   are saved to `<post>/figures/`, where `index.qmd` already expects them.
 
 5. **Write the post**
 
@@ -116,6 +114,44 @@ guidance-website/blog/<post>/
         └── crai_scores/        CRAI index per tract
 ```
 
+## Setting up a new event
+
+Go through `_analysis/event_config.yaml` top to bottom. The worked example it was copied
+from is filled in for Sacramento, so change every value that doesn't fit your event.
+
+- **`event_name`, `place_name`**: free text used in titles. `place_name` also goes into
+  output file names.
+- **`station_label`**: the airport's 4-letter code (`K` + its 3-letter code, e.g. `KFAT` for
+  Fresno). Leave it empty to use the station inside `clip` with the longest record. If the
+  code isn't in HDP, Part 1 stops with an error.
+- **`network_id`**: `ASOSAWOS` (default) or `OtherISD`. Some airports are only in one of
+  them; if your code isn't found, try the other.
+- **`clip`**: the county, written `"<Name> County"` (e.g. `"Fresno County"`). The WRF
+  projections are cut to it, and an empty `station_label` searches it for a station.
+- **`zip_shapefile`**: a zip-code shapefile (`.zip`) covering the area to map, placed in
+  `_analysis/`. Counties' GIS or open-data portals usually publish one. It needs a `ZIP5`
+  (zip code) and `PO_NAME` (place name) column; if yours names them differently, rename
+  them first:
+  ```python
+  import geopandas as gpd
+  z = gpd.read_file("county_zips.zip").rename(columns={"ZIP_CODE": "ZIP5", "CITY": "PO_NAME"})
+  z[["ZIP5", "PO_NAME", "geometry"]].to_file("my_zipcodes.zip", driver="ESRI Shapefile")
+  ```
+  The maps cover the census tracts whose center falls inside these zip codes.
+- **`event.year`, `event.windows`**: the event year and a `[start, end]` pair per
+  heat wave or storm (both dates included).
+- **Thresholds**: what counts as an event at this place (see "Config files" below for each
+  setting). Run Part 1 first with a first guess. It prints the station's record dates —
+  check they cover your event — and each window's peak values (heat: peak max temperature
+  and the number of days and nights past the thresholds; precip: total, max 1-day and max
+  N-day rainfall). Adjust the thresholds, then Run All.
+- **`projection`**: leave as is.
+
+**Precip only:** `index.qmd` embeds the figures of the example event `3day_p99`. If your
+config uses a different `id`, replace `3day_p99` with it throughout `index.qmd`. For each
+extra entry in `thresholds.events`, copy the return-period, events-map and delta-map
+blocks and change the `id` in the copies.
+
 ## Config files
 
 Each post's `_analysis/event_config.yaml` starts as a copy of one of the two worked
@@ -129,7 +165,7 @@ hazard: heat                       # heat | precip — picks the notebook and po
 event_name: "Sacramento 2020"
 
 location:
-  station_label: "KSAC"            # airport code of the HDP weather station (precip: may be empty)
+  station_label: "KSAC"            # airport code of the HDP weather station (may be empty)
   network_id: ASOSAWOS             # optional: ASOSAWOS (default) | OtherISD
   place_name: "Sacramento"         # used in titles and file names
   clip: "Sacramento County"        # area the WRF projections are cut to
@@ -194,11 +230,9 @@ qualifying days count once. Each entry uses one of:
 - `threshold_in`: the same amount for the station and every grid cell. Maps show where that
   amount is reached most often, but model bias is kept.
 
-The precip example uses Sacramento International (`KSMF`) from the `OtherISD` network. If
-you don't know a station's airport code, leave `station_label` empty: the notebook then uses
-the station in `network_id` inside `clip` (a county) with the longest precipitation record.
-One airport code can have several station IDs in a network (they get renumbered when a
-station moves); the one with the longest precipitation record is used.
+The precip example uses Sacramento International (`KSMF`) from the `OtherISD` network. One
+airport code can have several station IDs in a network (they get renumbered when a station
+moves); the one with the longest record is used.
 
 Station precipitation is HDP `pr` used as-is. HDP double-counts some reports, so station
 totals run high.

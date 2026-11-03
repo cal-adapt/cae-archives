@@ -76,7 +76,7 @@ class EventConfig:
         self.event_name = req("event_name")
 
         loc = req("location")
-        # Airport code; empty -> precip_event searches location.clip for a station instead
+        # Airport code; empty -> the notebook searches location.clip for a station instead
         self.station_label = loc.get("station_label") or None
         self.network_id = loc.get("network_id") or HDP_NETWORK_ID   # ASOSAWOS | OtherISD
         self.place_name = req("location", "place_name")
@@ -209,9 +209,9 @@ def isd_candidates(isd, hdp_df, network_id, icao=None, area=None):
     return [i for i in ids if i in in_network]
 
 
-def longest_pr_record(station_ids, network_id):
-    """The station whose `pr` record spans the longest time, first report to last,
-    however often it reports in between. Reads only `pr` from each station."""
+def longest_record(station_ids, network_id, variable="pr"):
+    """The station whose `variable` record (e.g. pr, tas) spans the longest time, first
+    report to last, however often it reports in between. Reads only that variable."""
     import climakitae as ck
 
     cd = ck.ClimateData(verbosity=-1)
@@ -221,17 +221,17 @@ def longest_pr_record(station_ids, network_id):
             ds = cd.catalog("hdp").network_id(network_id).station_id(sid).get()
         except Exception:
             continue
-        if ds is None or "pr" not in ds:
+        if ds is None or variable not in ds:
             continue
-        pr = ds["pr"].squeeze()
-        reported = pr.time.values[pr.notnull().compute().values]
+        da = ds[variable].squeeze()
+        reported = da.time.values[da.notnull().compute().values]
         if reported.size == 0:
             continue
         span = pd.Timestamp(reported[-1]) - pd.Timestamp(reported[0])
         if span > best_span:
             best_id, best_span = sid, span
     if best_id is None:
-        raise ValueError(f"None of {station_ids} have precipitation data")
+        raise ValueError(f"None of {station_ids} have {variable} data")
     return best_id
 
 
@@ -244,13 +244,13 @@ def _resolve_legacy_asos(station_label):
     return station_id if station_id.startswith(f"{HDP_NETWORK_ID}_") else None
 
 
-def resolve_hdp_station(station_label, network_id=HDP_NETWORK_ID):
+def resolve_hdp_station(station_label, network_id=HDP_NETWORK_ID, variable="pr"):
     """Resolve an ICAO label (e.g. 'KSAC', 'KSMF') to its HDP station_id in `network_id`, or raise.
 
     ASOSAWOS tries climakitae's legacy airport table first. Otherwise the code is looked
     up in NOAA's ISD station list; when one code has several ids in the network (ISD
-    renumbers stations that move or change equipment), the one with the longest `pr`
-    record is used.
+    renumbers stations that move or change equipment), the one with the longest
+    `variable` record is used.
     """
     from climakitae.new_core.data_access.data_access import DataCatalog
 
@@ -266,7 +266,7 @@ def resolve_hdp_station(station_label, network_id=HDP_NETWORK_ID):
             raise ValueError(f"station_label '{station_label}' has no {network_id} station in HDP. "
                              f"Try the other network, or leave station_label empty to search "
                              f"location.clip for one.")
-        station_id = ids[0] if len(ids) == 1 else longest_pr_record(ids, network_id)
+        station_id = ids[0] if len(ids) == 1 else longest_record(ids, network_id, variable)
     print(f"Resolved '{station_label}' -> network_id={network_id!r}, station_id={station_id!r}")
     return station_id
 
@@ -281,16 +281,16 @@ def county_boundary(clip):
     return county.to_crs("EPSG:4326").union_all()
 
 
-def find_station_in_area(area, network_id=HDP_NETWORK_ID):
+def find_station_in_area(area, network_id=HDP_NETWORK_ID, variable="pr"):
     """HDP station_id of the `network_id` station inside `area` (shapely geometry in
-    lon/lat, e.g. county_boundary(cfg.clip)) with the longest `pr` record."""
+    lon/lat, e.g. county_boundary(cfg.clip)) with the longest `variable` record."""
     from climakitae.new_core.data_access.data_access import DataCatalog
 
     ids = isd_candidates(load_isd_history(), DataCatalog().hdp.df, network_id, area=area)
     if not ids:
         raise ValueError(f"No {network_id} stations inside the area")
-    station_id = longest_pr_record(ids, network_id)
-    print(f"Longest {network_id} pr record of {len(ids)} stations in the area: {station_id!r}")
+    station_id = longest_record(ids, network_id, variable)
+    print(f"Longest {network_id} {variable} record of {len(ids)} stations in the area: {station_id!r}")
     return station_id
 
 
