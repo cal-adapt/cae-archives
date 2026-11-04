@@ -236,3 +236,17 @@ def test_tracts_inside_area_drops_edge_tracts():
         box(-121.0, 38.0, -120.9, 38.1),       # far away
     ])
     assert eh.tracts_inside_area(tracts, zips)["GEOID"].tolist() == ["inside"]
+
+
+def test_check_record_covers():
+    time = pd.date_range("2020-01-01", "2020-12-31", freq="D")
+    vals = np.ones(len(time))
+    vals[(time >= "2020-08-20") & (time <= "2020-08-21")] = np.nan
+    daily = xr.DataArray(vals, coords={"time": time}, dims="time")
+
+    eh.check_record_covers(daily, [["2020-08-14", "2020-08-18"]], "KTST")   # full coverage
+    eh.check_record_covers(daily, [["2020-08-19", "2020-08-22"]], "KTST")   # partial: warns only
+    with pytest.raises(ValueError, match="no data"):
+        eh.check_record_covers(daily, [["2021-08-14", "2021-08-18"]], "KTST")   # after record ends
+    with pytest.raises(ValueError, match="no data"):
+        eh.check_record_covers(daily, [["2020-08-20", "2020-08-21"]], "KTST")   # all-missing window

@@ -1,7 +1,17 @@
 # Relevant Hazard Post Generation
-(last updated: 11/2/26)
+(last updated: 11/4/26)
 
 Hi there! This README walks you through how to generate a new relevant hazard post for a specific event of interest. This currently supports two types of events: **extreme heat and extreme precipitation.**
+
+**Why this lives in `cae-archives`:** `cal-adapt-guidance` holds only the files the website
+itself is built from. The notebooks, helpers and data used to *generate* a post live here.
+Each post is built under `guidance-website/blog/` and the finished folder is copied
+into `cal-adapt-guidance/blog/posts/` (step 6 below).
+
+**Any area in California:** the worked examples use Sacramento (Sacramento County and
+Sacramento zip codes), but they are only examples. For an event elsewhere, e.g. an
+atmospheric river with its worst impacts in Southern California, set your own station,
+county and zip-code shapefile in the config (see "Setting up a new event").
 
 ## Layout
 
@@ -55,8 +65,9 @@ guidance-website/
 
 2. **Create the post folder**
 
-   From `guidance-website/blog/`:
+   In a terminal, go to the `blog/` folder, then run the script:
    ```bash
+   cd <path-to>/cae-archives/guidance-website/blog
    ../relevant-hazard-template/run_event.sh 2027-07-01-fresno-extreme-heat --new heat
    ```
    Use `--new precip` for a precip post. This sets up `index.qmd`, an empty `images/`
@@ -69,8 +80,10 @@ guidance-website/
 
 4. **Run the notebook**
 
-   Open `_analysis/heat_event.ipynb` (or `precip_event.ipynb`) in VS Code with the
-   `climakitae` kernel and Run All. It needs an internet connection (HDP station data, WRF
+   Open `blog/<post>/_analysis/heat_event.ipynb` (or `precip_event.ipynb`) and Run All.
+   Keep the notebook in `_analysis/`: it finds the helpers and config by relative path.
+   It runs either on the Cal-Adapt JupyterHub or locally (e.g. VS Code); use the
+   `climakitae` kernel in both cases. It needs an internet connection (HDP station data, WRF
    projections, census tracts and NOAA's station list are all read remotely). The figures
    are saved to `<post>/figures/`, where `index.qmd` already expects them.
 
@@ -116,7 +129,7 @@ guidance-website/blog/<post>/
 
 ## Setting up a new event
 
-Go through `_analysis/event_config.yaml` top to bottom. The worked example it was copied from is filled in for Sacramento, so change every entry that doesn't fit your event.
+Go through `_analysis/event_config.yaml` top to bottom. The worked example it was copied from is filled in for Sacramento, so change every entry that doesn't fit your event. In particular, `station_label`, `clip` and `zip_shapefile` all point at Sacramento and must be replaced for an event anywhere else (e.g. `KLAX`, `"Los Angeles County"` and a Los Angeles zip-code shapefile).
 
 - **`event_name`, `place_name`**: free text used in titles. `place_name` also goes into output file names.
 - **`station_label`**: the airport's 4-letter code (`K` + its 3-letter code, e.g. `KFAT` for Fresno). Leave it empty to use the station inside `clip` with the longest record. If the code isn't in HDP, Part 1 stops with an error.
@@ -124,7 +137,8 @@ Go through `_analysis/event_config.yaml` top to bottom. The worked example it wa
 - **`clip`**: the county, written `"<Name> County"` (e.g. `"Fresno County"`). The WRF
   projections are cut to it, and an empty `station_label` searches it for a station.
 - **`zip_shapefile`**: a zip-code shapefile (`.zip`) covering the area to map, placed in
-  `_analysis/`. Counties' GIS or open-data portals usually publish one. It needs a `ZIP5`
+  `_analysis/`, replacing the example `sac_zipcodes.zip` (delete it from `_analysis/`).
+  Counties' GIS or open-data portals usually publish one. It needs a `ZIP5`
   (zip code) and `PO_NAME` (place name) column; if yours names them differently, rename
   them first:
   ```python
@@ -137,6 +151,12 @@ Go through `_analysis/event_config.yaml` top to bottom. The worked example it wa
   heat wave or storm (both dates included).
 - **Thresholds**: what counts as an event at this place (see "Config files" below for each
   setting). Run Part 1 first with a first guess. It prints the station's record dates. Check that they cover your event's dates and each window's peak values (heat: peak max temperature and the number of days and nights past the thresholds; precip: total, max 1-day and max N-day rainfall). Adjust the thresholds, then Run All.
+
+  If the station has no data for an event window (the record starts after it, ends
+  before it, or has a gap over it), Part 1 stops with an error. If only some days in a
+  window are missing, it prints a warning listing them and keeps going. To fix either,
+  pick another station: try the other `network_id`, a nearby airport's `station_label`,
+  or leave `station_label` empty to use the longest record in `clip`. Then rerun Part 1.
 - **`projection`**: the example values work anywhere in California.
   - `warming_levels`: up to four, lowest first.
   - `baseline_warming_level`: your baseline WL to compare from.
@@ -234,11 +254,33 @@ Station precipitation is HDP `pr` used as-is. HDP double-counts some reports, so
 totals run high.
 
 
+## CRAI metrics
+
+`crai_cache/` holds the statewide Cal-CRAI climate metrics for **every** hazard (heat,
+flood/precip, wildfire, drought, sea-level rise), not just heat, so it doesn't need to be
+rebuilt for a new hazard. Each notebook picks the metrics for its hazard in Part 5:
+
+- The event metric from Part 4 is computed for each post and **replaces** Cal-CRAI's own
+  projected metrics for that hazard. Heat drops `mean_change_annual_heat_days` and
+  `mean_change_annual_warm_nights`; precip drops `precip_99percentile` and `surface_runoff`.
+- It's combined with the hazard's other exposure and loss metrics (defaults in the
+  notebook's Setup cell):
+  - **heat:** exposure `median_heat_warning_days`; loss `heat_crop_loss_acres`,
+    `heat_crop_loss_indemnity_amount`, `avg_age_adjust_heat_hospitalizations_per_10000`
+  - **precip:** exposure `median_flood_warning_days`, `floodplain_percentage`; loss
+    `avg_flood_insurance_payout_per_claim`, `estimated_flood_crop_loss_cost`,
+    `total_flood_fatalities`
+
+To use different metrics, uncomment the `crai:` block at the end of `event_config.yaml` and
+list them by name. Valid names are the column names in
+`crai_cache/climate_metrics_standardized.csv` without the `_min_max_standardized` suffix.
+
 ## Tests
 
 Offline tests (synthetic data, no network) for `helpers/event_helpers.py`. From
 `guidance-website/`:
 ```bash
+cd <path-to>/cae-archives/guidance-website
 conda run -n climakitae pytest relevant-hazard-template/tests
 ```
 

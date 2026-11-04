@@ -301,6 +301,26 @@ def station_icao(station_id):
     return icao.iloc[0] if len(icao) else ""
 
 
+def check_record_covers(daily, windows, station_label):
+    """Stop if a station's daily series has no data in an event window; warn on missing days.
+
+    `daily` is a daily DataArray on `time`; `windows` is cfg.event_windows."""
+    first, last = (str(daily.time.values[i])[:10] for i in (0, -1))
+    fix = ("Try the other network_id, a nearby airport's station_label, or leave "
+           "station_label empty to use the longest record in clip.")
+    for start, end in windows:
+        days = pd.date_range(start, end, freq="D")
+        have = daily.sel(time=slice(start, end)).dropna("time")
+        missing = days.difference(pd.DatetimeIndex(have.time.values).normalize())
+        if len(missing) == len(days):
+            raise ValueError(
+                f"{station_label} has no data for the event window {start} to {end} "
+                f"(record: {first} to {last}). {fix}")
+        if len(missing):
+            print(f"Warning: {station_label} is missing {len(missing)} of {len(days)} days in "
+                  f"{start} to {end}: {', '.join(d.strftime('%Y-%m-%d') for d in missing)}")
+
+
 def pull_hdp_station(station_id, network_id=HDP_NETWORK_ID):
     """Full hourly record for one HDP station, computed into memory."""
     import climakitae as ck
