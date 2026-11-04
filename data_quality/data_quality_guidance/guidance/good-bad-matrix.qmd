@@ -1,0 +1,28 @@
+---
+title: "Good / Bad Matrix"
+subtitle: "Good-for · use-with-caution · not-recommended, per variable × use case"
+date: last-modified
+---
+
+This matrix renders from `data/goodbad_matrix.csv`. To update the results and veredicts, we need to 
+update the edit that file (or the fillable
+`data/goodbad_matrix.xlsx`, which has dropdowns) and re-render to update the table.
+
+::: {.callout-note appearance="simple"}
+Verdicts are intentionally left **TBD**. I believe assigning them is the team's job, and no verdict
+stands without the *dimensions assessed* + *evidence* behind it.
+:::
+
+```{python}
+import pandas as pd
+from itables import show          # falls back gracefully; see note below
+df = pd.read_csv("../data/goodbad_matrix.csv").fillna("")
+df
+```
+
+
+### Evidence IDs
+
+The `Evidence` (R##/Q##) and `Open questions` (DQ##) columns cite entries from the
+lit-review database. See the [References](../references.qmd) page for the full entry behind
+each ID.

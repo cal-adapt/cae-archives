@@ -1,0 +1,18 @@
+{
+ "abs_seasonal_by_region": 700,
+ "abs_seasonal_trends": 430,
+ "agreement_by_region": 660,
+ "between_products_stations": 600,
+ "dist_daily_airports": 700,
+ "dist_daily_stations": 700,
+ "dist_stations_hourly": 420,
+ "dist_stations_monthly": 450,
+ "extremes_stations": 450,
+ "ratio_by_region": 430,
+ "region_assignment": 680,
+ "region_assignment_and_agreement": 620,
+ "seasonal_by_region": 700,
+ "seasonal_stations": 350,
+ "seasonal_trends": 450,
+ "station_agreement_maps": 620
+}

@@ -1,0 +1,129 @@
+---
+title: "Scope & Definitions"
+subtitle: "Applied to every variable"
+date: last-modified
+---
+
+**Purpose.** Fix the boundaries and the method before characterization starts, so
+results are comparable across variables and the work is repeatable. Items marked
+**[CONFIRM in review]** / **[FILL]** are decisions for the science team; everything else is
+drawn from the lit-review database and flagged with source IDs.
+
+---
+
+## 1. Datasets in scope
+
+The two downscaling paths treat most variables **fundamentally differently**, and
+the difference is the single most useful thing to know about them.
+
+- **WRF (WUS-D03), 3 km CA convection-permitting** : the dynamical path, and the
+  one that physically *simulates* the atmosphere. Native hourly output; resolves
+  terrain-driven and mesoscale flow.
+  *([R12](../references.qmd#R12), [R19](../references.qmd#R19); [R04](../references.qmd#R04) validation.)*
+- **LOCA2 CA hybrid, 3 km** : the statistical/hybrid downscaling. Trained to reproduce
+  an observational target, so it inherits that target's spatial structure rather
+  than generating its own.
+
+**[CONFIRM in review]** exact cadcat versions/paths, and whether 9 km WUS-D3 is in scope.
+
+::: {.callout-note appearance="simple"}
+**Not every variable is downscaled at parity.** Wind is not statistically
+downscaled in LOCA2 the way temperature and precipitation are
+*([R02](../references.qmd#R02))*.
+:::
+
+---
+
+## 2. Extent
+
+- **Spatial:** California 3 km domain (d03); IOU service territories as priority
+  sub-regions. **[CONFIRM with review]**
+- **Temporal:** 1980–2100; SSP3-7.0 primary. **[CONFIRM with review]**
+- **Vertical:** surface. 
+---
+
+## 3. What "good" means {#sec-good}
+
+"The data is good" means different things per use case, so every variable ×
+use case is scored against these dimensions explicitly rather than given a single
+overall guess.
+
+| dimension | what it captures | 
+|---|---|
+| **Mean bias** | absolute bias vs observations | 
+| **Spatial pattern fidelity** | are the maxima in the right places? | statistical downscaling inherits a smoother field |
+| **Extremes and distribution shape** | tails, and the *shape* of the distribution | 
+<!-- | **Response to terrain** | does the product resolve what its grid spacing implies? | -->
+<!-- | **Diurnal / seasonal structure** | timing of daily and seasonal cycles |  -->
+<!-- | **Inter-variable consistency** | coherence with the other variables an index needs |  -->
+
+---
+
+## 4. The reference hierarchy {#sec-references}
+
+Three tiers, ordered by what each can settle. **The order is part of the method.**
+
+| tier | example | answers | cannot answer |
+|---|---|---|---|
+| **point observations** | HDP station network | Is the product right where we measured? | ocean; unobstructed high terrain; anywhere unsampled |
+| **independent fine-scale model** | CONUS404 (4 km, NCAR/USGS) | Do independent models agree? | whether either is right |
+| **reanalysis** | ERA5 (0.25°) | Where and when do coarse and fine diverge? | finer scale structures |
+
+**Observations first.** A ratio against a coarse reanalysis measures a *distance*,
+not an error: at 0.25° (~31 km) a reanalysis cannot represent a 3 km ridge–valley
+contrast, so disagreement over terrain is expected and is not by itself evidence
+against either side.
+
+**The reanalysis earns its place through coverage.** It is the only
+field that is complete and uniform, which makes it the only one that can supply a
+*control region*, somewhere the mechanism under test should switch off. For wind
+that is the ocean, where a resolution effect must vanish and a calibration error
+must not.
+
+::: {.callout-tip appearance="simple"}
+**Station siting is the limiting factor, and it is not standardised.** Instrument
+height usually is. Where the instrument *stands* is not, and that difference is
+a large source of scatter in every station comparison. Open (exposed) sites will behave differently from sheltered ones.
+:::
+
+---
+
+## 5. Choosing the metric {#sec-metric}
+
+**The metric is not universal.** Decide it before any comparison is run and state
+it on the characterization page. Wind speed is an unbounded variable, while
+relative humidity is bounded between 0 and 100 %. 
+
+A ratio is meaningless for a bounded variable: where observed RH is 90 %, no model
+can score above 1.11 however wrong it is, so a map of RH ratio is largely a map of
+where the observations are high.
+
+Beyond a bias, two diagnostics have proved decisive and are now standard:
+
+**Distribution analysis** examines the overall shape of the variable's distribution,
+and a **quantile comparison (Q–Q against observations).** A straight line through the
+origin means the departure is affine, a shift and a stretch, and a simple
+correction is the right functional form. Curvature means it is not.
+
+
+---
+
+## 7. Known issues to carry in from the start
+
+- Absolute bias and its sensitivity to model configuration.
+- Complex terrain and coastal transitions, where both model error and
+  observational reference are worst *([R18](../references.qmd#R18))*.
+- The sparse-California-reference problem for anything trained on observations
+  *([DQ9](../references.qmd#DQ9); [R16](../references.qmd#R16))*.
+- Robustness of projected changes for **maxima** vs means
+  *([DQ6](../references.qmd#DQ6))*; spatial consistency of trends across GWLs
+  *([DQ7](../references.qmd#DQ7))*.
+
+---
+
+*Sources: [R02](../references.qmd#R02), [R04](../references.qmd#R04),
+[R12](../references.qmd#R12), [R16](../references.qmd#R16),
+[R18](../references.qmd#R18), [R19](../references.qmd#R19);
+open questions [DQ6](../references.qmd#DQ6), [DQ7](../references.qmd#DQ7),
+[DQ9](../references.qmd#DQ9). Full entries on the
+[References](../references.qmd) page.*

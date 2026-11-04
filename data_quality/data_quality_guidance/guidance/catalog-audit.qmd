@@ -1,0 +1,253 @@
+---
+title: "Catalog audit"
+subtitle: "Metadata quality of the cadcat archive, checked through two independent access paths"
+date: last-modified
+---
+
+**Purpose.** Characterize the `cadcat` archive itself, not what the data say,
+but whether the metadata describing them is correct, complete, and consistent
+with Cal-Adapt's own published documentation.
+
+Produced by `cadcat_qc`, run over WRF and LOCA2-Hybrid across all domains
+(`d01`/`d02`/`d03`) and all temporal resolutions (`1hr`/`day`/`mon`/`yrmax`).
+
+::: {.callout-tip}
+## Headline
+
+**Two surfaces are checked, and a requirement can fail on one and pass on the
+other.** That distinction is the point of the audit.
+
+| verdict | n | who is affected |
+|---|---|---|
+| **non-compliant on both** | **60** | everyone: fix at the source |
+| **introduced by the reader** | **46** | every AE user, regardless of the store's state |
+| **repaired by the reader** | **40** | anyone reading the Zarr directly |
+| compliant | 200 | — |
+
+**276 ERROR-level findings**, and two codes account for 208 of them, both on
+WRF's `u10`/`v10`, and both with direct consequences for the
+[wind speed](../variables/wind-speed.qmd) analysis.
+:::
+
+---
+
+## 1. Why two data sources
+
+The same checks run over two independent access paths:
+
+| surface | reads via | answers |
+|---|---|---|
+| **delivered** | `climakitae.ClimateData` | Is the data usable as an Analytics Engine user receives it? |
+| **published** | `xarray.open_zarr` on `s3://cadcat` | Is the published dataset itself correct? |
+
+**Running both and diffing them is the point.** `climakitae` repairs some
+metadata on read. It attaches a CRS to stores that lack one, so anything it
+repairs is invisible through the first path while remaining a defect in the
+second. And the reverse happens too: aggregation performed on read can *introduce*
+a problem that the store does not have.
+
+::: {.callout-note appearance="simple"}
+Neither path ever calls `.load()`. Datasets are opened lazily and only
+coordinates are read, so the audit is cheap enough to run on a schedule.
+:::
+
+```{python}
+#| echo: false
+import pandas as pd
+
+rec = pd.read_csv("../data/audit/reconciliation.csv")
+find = pd.read_csv("../data/audit/all_findings.csv")
+
+n_ds = find[["activity_id", "table_id", "grid_label", "variable_id",
+             "experiment_id", "member_id"]].drop_duplicates().shape[0]
+lv = find.level.value_counts().reindex(["ERROR", "WARN", "INFO", "OK"]).dropna()
+print(f"{len(find):,} findings across {n_ds:,} datasets\n")
+print(lv.to_frame("count").to_markdown())
+```
+
+---
+
+## 2. Where are the data defects? {#sec-reconciliation}
+
+Every requirement is recorded against **where it failed**, not as a single
+finding. Three of the four outcomes need action, and they need different action.
+
+```{python}
+#| echo: false
+LABEL = {"both": "Non-compliant on both surfaces",
+         "introduced_by_reader": "Introduced by climakitae",
+         "store_defect_repaired": "Repaired by climakitae",
+         "compliant": "Compliant on both"}
+t = (rec.groupby(["verdict", "code"]).size().reset_index(name="n")
+        .query("verdict != 'compliant'")
+        .sort_values(["verdict", "n"], ascending=[True, False]))
+t["verdict"] = t.verdict.map(LABEL)
+t = t.merge(rec[["code", "requirement", "doc"]].drop_duplicates("code"),
+            on="code", how="left")
+print(t.rename(columns={"verdict": "where it fails", "n": "rows"})
+       .to_markdown(index=False))
+```
+
+### Non-compliant on both: it needs to be fixed at the source
+
+Neither the store nor the delivered product meets the documented requirement.
+Sixty rows, dominated by self-description: empty global attributes, missing
+`long_name`, missing `Conventions`.
+
+::: {.callout-warning appearance="simple"}
+**`wind.rotation.undeclared` is the one with analytical consequences.** Wind
+components must declare their reference frame, and grid-relative and
+earth-relative are *not* interchangeable. The difference is a rotation by the
+map projection's convergence angle, up to several degrees across the domain.
+`uas` declares no frame, so a consumer cannot confirm which it has. See §4.
+:::
+
+### Introduced by climakitae: the store is fine
+
+The published store satisfies the requirement; what users receive does not.
+**Every AE user is affected regardless of the store's state, and fixing the store
+would change nothing.**
+
+The largest is `dataset.aggregated` (37 rows): a query pinning every available
+facet still returns several stores combined rather than one published dataset.
+Time alignment across members can then silently drop dates that any one member
+lacks.
+
+### Repaired by climakitae: still a defect, but mitigated
+
+`crs.spatial_ref.missing`, 40 rows. LOCA2 stores should carry a `spatial_ref`
+coordinate holding the WGS84 definition; they do not, and `climakitae` attaches
+one on read.
+
+Invisible to AE users, and still worth fixing: it affects anyone reading the Zarr
+directly, and it depends on that repair continuing to exist.
+
+---
+
+## 3. The errors {#sec-errors}
+
+```{python}
+#| echo: false
+err = (find.query("level == 'ERROR'")
+           .groupby(["activity_id", "code"]).size()
+           .reset_index(name="n").sort_values("n", ascending=False))
+msg = (find.query("level == 'ERROR'").drop_duplicates("code")
+           .set_index("code").message.str.slice(0, 150))
+err["what it means"] = err.code.map(msg)
+print(err.to_markdown(index=False))
+```
+
+**Two codes account for 208 of the 276 errors, and both are on WRF's
+`u10`/`v10`.**
+
+**`catalog.path.staging_prefix`**: the store is served from a `tmp` prefix
+rather than its canonical location. Data under a staging prefix carries no
+persistence guarantee, so anything pinned to that path can vanish without notice.
+
+**`catalog.path.variable_qualifier_dropped`**: the store holds `u10_earth` but
+the catalog indexes it as `u10`. The `_earth` qualifier means *earth-relative*;
+WRF's native `u10`/`v10` are *grid-relative*. **A user querying `u10` receives a
+rotated field and the catalog does not say so.**
+
+---
+
+## 4. What this means for wind {#sec-wind}
+
+Three audit findings land directly on the
+[wind speed characterization](../variables/wind-speed.qmd):
+
+**The wind components are the worst-affected variables in the archive.** `u10`
+and `v10` at every domain carry both ERROR codes (32 to 36 findings each), more
+than any other dataset.
+
+**The reference frame is unresolved in two directions at once.** The catalog
+drops the `_earth` qualifier, so a query for `u10` may return an earth-relative
+field indexed as if it were grid-relative; and `uas` declares no frame at all, so
+neither can be confirmed from the file. The wind review's §10 notes that no wind
+direction is published in the analysed archive. 
+
+**A staging prefix is not a stable citation.** Anything pinning a `u10` path from
+the catalog is pinning a location with no persistence guarantee.
+
+::: {.callout-important appearance="simple"}
+None of this changes the wind speed results. `wspd10mean` and `wspeed` are scalar
+speeds and rotation-invariant, and the analysis sampled stores rather than
+citing paths. **It changes what a user should do with the component variables.**
+:::
+
+---
+
+## 5. Coverage gaps {#sec-coverage}
+
+Variables documented in `variable_descriptions.csv` for which no store exists at
+any grid label:
+
+```{python}
+#| echo: false
+absent = pd.read_csv("../data/audit/documented_but_absent.csv")
+print(absent.to_markdown(index=False))
+```
+
+And the reverse, published but undocumented, so `climakitae` resolves no unit or
+display name:
+
+```{python}
+#| echo: false
+und = (find.query("code == 'catalog.variable.undocumented' or "
+                  "code == 'catalog.variable.timescale_mismatch'")
+           .groupby(["code", "activity_id", "table_id"])
+           .variable_id.agg(lambda s: ", ".join(sorted(set(s))[:8]))
+           .reset_index().rename(columns={"variable_id": "variables"}))
+print(und.to_markdown(index=False))
+```
+
+**`dew_point` and `effective_temp_index` are published at three domains and three
+cadences and documented nowhere**, so a user pulling either gets a field with no
+units and no display name. `rh` is published hourly but documented only at
+`day`/`mon`, which affects the
+[relative humidity](../variables/relative-humidity.qmd) work directly.
+
+---
+
+## 6. What to do with this
+
+**For the catalog maintainers**, in order of user impact:
+
+1. **`u10`/`v10` off the staging prefix**, and either index the `_earth`
+   qualifier or publish the grid-relative field the catalog claims. 208 of 276
+   errors.
+2. **Declare the wind reference frame** in the component variables' attributes.
+3. **Document `dew_point`, `effective_temp_index`, and `rh` at `1hr`** (or
+   remove them from the catalog). Published-but-undocumented is (in my opinion)the worst of the
+   three states.
+4. **Fill the empty global attributes.** A reader cannot tell an empty value from
+   an unanswered question.
+
+**For this pillar:** the audit runs in seconds at catalog level and returns
+CI-friendly exit codes (`0` clean, `1` warnings, `2` errors). Running it on a
+schedule would catch a regression when it is introduced rather than at the next
+manual audit.
+
+---
+
+## Method
+
+Metadata is a property of `(activity_id, institution_id, table_id, grid_label,
+variable_id)` rather than of which GCM or member produced the run, so the sweep
+opens **one store per unique facet combination** and records how many stores each
+sample stands for. `experiment_id` is included because expected start and end
+years are per-experiment.
+
+Checks cover: catalog-row validity against the documented vocabularies; variable
+presence, `units` and `long_name`; a three-tier unit comparison (alias table,
+accepted physical restatements, then a dimensional check, `K` versus `degC`
+stays a mismatch because the offset matters); global attributes against the
+recommended six; CRS per the documented split; coordinates, grid spacing against
+the nominal 45/9/3 km; time decoding, extent, cadence, monotonicity and
+per-model leap-day rules; and Zarr store structure.
+
+Expectations live in one place (`standards.py`) and the checks read from it
+rather than hard-coding thresholds.
+
+*Full findings: `data/audit/all_findings.csv` (1,961 rows) and
+`data/audit/reconciliation.csv`.*

@@ -3,9 +3,9 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "data-audit"
+name = "cae-data-quality"
 version = "0.1.0"
-description = "Documentation-compliance audit for the Cal-Adapt: Analytics Engine cadcat archive (WRF and LOCA2)"
+description = "Data quality for the Cal-Adapt: Analytics Engine cadcat archive — documentation audit, plus wind speed and relative humidity analysis"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "BSD-3-Clause" }
@@ -20,23 +20,56 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Opening Zarr stores directly from s3://cadcat. Needed for every stage past
-# the catalog audit.
+# Opening Zarr stores directly from s3://cadcat. Needed for every audit stage
+# past the catalog audit.
 stores = ["s3fs", "zarr", "dask[array]"]
+
+# The wind and humidity analysis: regridding, station handling, plotting.
+# `flox` is effectively required rather than optional — without it xarray's
+# groupby falls back to a Python loop and binning takes minutes, not seconds.
+analysis = [
+    "dask[array]>=2023.1",
+    "flox>=0.8",
+    "numbagg",
+    "bottleneck",
+    "scipy",
+    "netcdf4",
+    "h5netcdf",
+    "zarr",
+    "s3fs",
+    "intake",
+    "intake-esm",
+    "geopandas",
+    "shapely",
+    "pyproj",
+    "rioxarray",
+    "matplotlib",
+    "cartopy",
+    "tabulate",
+]
+
+# ERA5 lives in an Arraylake repository and needs a login; kept separate so the
+# rest installs without it.
+era5 = ["arraylake"]
 
 # Sharper unit comparison: dimensional analysis rather than a string match.
 units = ["pint"]
 
 parquet = ["pyarrow"]
 dev = ["pytest>=7", "mypy", "ruff"]
-all = ["data-audit[stores,units,parquet,dev]"]
+all = ["cae-data-quality[stores,analysis,era5,units,parquet,dev]"]
 
 [project.scripts]
+# Archive audit
 data-audit = "data_audit.cli:main"
+# Analysis pipelines
+dq-build-datasets = "data_quality.build_datasets:main"
+dq-build-metrics = "data_quality.build_metrics:main"
+dq-verify = "data_quality.verify:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["data_audit*"]
+include = ["data_audit*", "data_quality*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -61,7 +94,7 @@ convention = "numpy"
 
 [tool.mypy]
 python_version = "3.10"
-packages = ["data_audit"]
+packages = ["data_audit", "data_quality"]
 mypy_path = "src"
 ignore_missing_imports = true
 warn_unused_ignores = true

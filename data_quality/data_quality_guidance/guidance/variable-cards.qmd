@@ -1,0 +1,103 @@
+---
+title: "Variable Cards"
+subtitle: "One card per variable, indexed by the name the user actually has in hand"
+date: last-modified
+---
+
+Each card answers, for one variable: what it is, where it came from, what it is good and bad for,
+and what known issues apply. Cards are generated from `data/variables.yml`; the use-case verdicts
+read live from the [good/bad matrix](good-bad-matrix.qmd), and every `R##` / `Q##` / `DQ##` links
+to its entry on the [References](../references.qmd) page. Add a variable by adding one YAML entry.
+
+```{python}
+#| output: asis
+#| echo: false
+import yaml, html, re
+import pandas as pd
+
+with open("../data/variables.yml") as f:
+    variables = yaml.safe_load(f)
+
+try:
+    matrix = pd.read_csv("../data/goodbad_matrix.csv").fillna("")
+except Exception:
+    matrix = pd.DataFrame()
+
+# valid IDs so we only linkify real references, pointing at the References page
+try:
+    lit = pd.read_csv("../data/lit_review.csv").fillna("")
+    oq = pd.read_csv("../data/open_questions.csv").fillna("")
+    valid_ids = set(lit["ID"]) | set(oq["DQ ID"])
+except Exception:
+    valid_ids = set()
+
+id_pattern = re.compile(r"\b(?:DQ|R|Q)\d+\b")
+
+def linkify(text):
+    if not text:
+        return text
+    return id_pattern.sub(
+        lambda m: (f"[{m.group(0)}](../references.html#{m.group(0)})"
+                   if m.group(0) in valid_ids else m.group(0)),
+        str(text),
+    )
+
+VERDICT_COLORS = {"Good for": "#2e7d32", "Use with caution": "#c8860d",
+                  "Not recommended": "#c0392b", "TBD": "#6c757d"}
+
+def chip(v):
+    v = str(v).strip()
+    c = VERDICT_COLORS.get(v, "#6c757d")
+    return (f'<span style="background:{c};color:#fff;border-radius:10px;'
+            f'padding:1px 8px;font-size:0.8em;white-space:nowrap;">{html.escape(v)}</span>')
+
+CALLOUT = {"resolved": "callout-tip", "open": "callout-warning", "caution": "callout-warning"}
+BADGE = {"resolved": "resolved", "open": "OPEN", "caution": "caution"}
+
+for var in variables:
+    print(f"## `{var['id']}` — {var.get('name','')}\n")
+
+    print('::: {.callout-note appearance="simple"}')
+    print(f"**Definition.** {linkify(var['definition'])}")
+    print(":::\n")
+
+    print("| | |")
+    print("|---|---|")
+    for label, key in [("Datasets", "datasets"), ("Units", "units"), ("Temporal", "temporal"),
+                       ("Type", "type"), ("Provenance", "provenance")]:
+        if var.get(key):
+            print(f"| **{label}** | {linkify(var[key])} |")
+    if var.get("use_for"):
+        print(f"| **Use `{var['id']}` for** | {var['use_for']} |")
+    if var.get("dont_confuse_with"):
+        print(f"| **Don't confuse with** | {var['dont_confuse_with']} |")
+    print()
+
+    if not matrix.empty and var.get("matrix_filter"):
+        sub = matrix[matrix["Variable"].str.contains(var["matrix_filter"], case=False, na=False)]
+        if len(sub):
+            print("**Use-case verdicts** (live from the [matrix](good-bad-matrix.qmd)):\n")
+            print("| Use case | Region / terrain | Verdict |")
+            print("|---|---|---|")
+            for _, r in sub.iterrows():
+                print(f"| {r['Use case']} | {r['Region / terrain']} | {chip(r['Verdict'])} |")
+            print()
+
+    for iss in var.get("known_issues", []):
+        cls = CALLOUT.get(iss.get("severity", ""), "callout-warning")
+        badge = BADGE.get(iss.get("severity", ""), iss.get("severity", ""))
+        print(f'::: {{.{cls} appearance="simple"}}')
+        print(f"**Known issue — {iss.get('id','')} ({badge}).** {linkify(iss['text'])}")
+        print(":::\n")
+
+    foot = []
+    if var.get("validated"): foot.append(f"**Validated:** {linkify(var['validated'])}")
+    if var.get("evidence"):  foot.append(f"**Evidence:** {linkify(var['evidence'])}")
+    if var.get("citation"):  foot.append(f"**Source:** {linkify(var['citation'])}")
+    if var.get("status"):    foot.append(f"**Status:** {linkify(var['status'])}")
+    # owner = var.get("owner") or "___"
+    # lastr = var.get("last_reviewed") or "___"
+    # foot.append(f"**Owner:** {owner} · **Last reviewed:** {lastr}")
+    print("  \n".join(foot))
+    print("\n\n---\n")
+```

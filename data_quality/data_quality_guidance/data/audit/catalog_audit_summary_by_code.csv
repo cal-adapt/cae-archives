@@ -1,0 +1,12 @@
+code,level,n,n_datasets,example
+catalog.path.staging_prefix,ERROR,104,1,"Store is served from a 'tmp' prefix rather than the canonical location. Data under a staging prefix carries no persistence guarantee, so anything pinned to this path can break without notice."
+catalog.path.variable_qualifier_dropped,ERROR,104,1,"The store holds 'u10_earth' but the catalog indexes it as 'u10'. The '_earth' qualifier means earth-relative rather than grid-relative; WRF's native u10/v10 are aligned to the projection axes, so the two are not interchangeable without rotation. Because the catalog drops it, these records pool silently with ordinary 'u10' and no metadata check will notice."
+catalog.variable.undocumented,WARN,321,1,"'dew_point' at WRF/1hr is not in variable_descriptions.csv at any resolution, so climakitae has no unit or display name for it."
+catalog.path.member_level_differs,WARN,80,1,"WRF paths from UCSD carry a member_id level that the rest of the activity omits. The layout is not consistent within the activity, so anything rebuilding paths from facets has to special-case this institution."
+catalog.variable.timescale_mismatch,WARN,71,1,"'rh' is published at WRF/1hr but variable_descriptions.csv lists it only at ['day', 'mon'], so no unit or display name resolves at this resolution."
+catalog.path.pseudo_institution,WARN,8,1,"Path uses 'derived-vars' in the institution slot while the catalog attributes this record to 'CAE'. A deliberate namespace for computed products, but it means path reconstruction from facets cannot be purely mechanical."
+coverage.variable.absent,WARN,8,1,'p' is documented for WRF/1hr but no store exists at any grid label.
+coverage.variable.timescale_mismatch,WARN,4,2,"'tasmax' is published at LOCA2/yrmax but the reference variable table lists it only at day,mon. climakitae will find no unit or display name for it here."
+coverage.variable.undocumented,INFO,6,1,"55 store(s) hold 'dew_point' at WRF/1hr, which the reference variable table does not describe."
+coverage.grid.asymmetric,INFO,5,1,"'ffwi' at WRF/1hr exists at d03 but not d01,d02. Often intentional; confirm it is."
+catalog.facet.partial,INFO,1,1,"WRF: facet 'member_id' is blank on 279 of 5,047 records (5.5%). Queries that filter on it will silently drop the blank ones."

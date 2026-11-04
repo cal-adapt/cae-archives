@@ -1,11 +1,24 @@
+# data_quality
+
+Data quality work on the **Cal-Adapt: Analytics Engine** `cadcat` archive, at
+`cae-archives/data_quality/`. Two packages, sharing one install:
+
+| package | question |
+| --- | --- |
+| **`data_audit`** | Does the archive match its own documentation? |
+| **`data_quality`** | Do the downscaled products agree with independent references? |
+
+`data_audit` checks catalog structure, metadata, and the published Zarr stores
+against the Cal-Adapt documentation. `data_quality` is the analysis behind the
+wind-speed and relative-humidity reviews — does downscaled 10 m wind agree with
+ERA5, with CONUS404, and with station observations, and the same for RH.
+
+They are independent: the audit needs no analysis dependencies, and the analysis
+does not import the audit.
+
+---
+
 # data_audit
-
-Documentation-compliance audit for the **Cal-Adapt: Analytics Engine** `cadcat`
-archive — WRF and LOCA2-Hybrid, all domains (`d01`/`d02`/`d03`) and all temporal
-resolutions (`1hr`/`day`/`mon`/`yrmax`).
-
-Lives at `cae-archives/data_quality/`. The wind-speed and relative-humidity
-analysis packages will sit alongside it later; this folder is the audit only.
 
 ## What it checks, and against what
 
@@ -30,14 +43,25 @@ read — it attaches a CRS to stores that lack one — so a defect can exist in 
 store without reaching users, or reach users without existing in the store.
 `reconcile` classifies which.
 
-## Install
+# Install (both packages)
 
 From `cae-archives/data_quality/`:
 
 ```bash
-pip install -e ".[stores]"      # audit + direct Zarr reads
-pip install -e ".[all]"         # + pint, parquet, dev tools
+pip install -e ".[stores]"              # audit + direct Zarr reads
+pip install -e ".[analysis]"            # the wind/humidity analysis
+pip install -e ".[stores,analysis]"     # both
+pip install -e ".[all]"                 # everything, incl. arraylake and dev tools
 ```
+
+| extra | pulls | needed for |
+| --- | --- | --- |
+| *(none)* | numpy, pandas, xarray, climakitae | catalog audit only |
+| `stores` | s3fs, zarr, dask | opening stores in `s3://cadcat` |
+| `analysis` | flox, scipy, geopandas, cartopy, … | the `data_quality` package |
+| `era5` | arraylake | the ERA5 store (needs a login) |
+| `units` | pint | dimensional unit comparison |
+| `dev` | pytest, mypy, ruff | tests and linting |
 
 The catalog audit runs on the base install alone, from the snapshot bundled
 inside `climakitae`. Everything past it needs `[stores]` and network access to
@@ -148,26 +172,38 @@ with ZarrBackend() as backend:
     findings = sweep(plan, backend, probe_values=True, max_workers=8)
 ```
 
-## Layout
+# Layout (both packages)
 
 ```
 data_quality/
-  src/data_audit/
-    standards.py           the expectations, encoded from the three doc pages
-    catalog.py             load / filter / sample; coverage and consistency
-    checks.py              the checks; return findings, never raise
-    findings.py            Finding + Level
-    backend_zarr.py        direct store reads, plus raw structural inspection
-    backend_climakitae.py  the delivered-product view
-    runner.py              audit / sweep / compare
-    reconcile.py           both surfaces judged against the documentation
-    report.py              summaries, markdown, HTML
-    cli.py                 python -m data_audit
+  src/
+    data_audit/              the archive audit
+      standards.py             the expectations, from the three doc pages
+      catalog.py               load / filter / sample; coverage and consistency
+      checks.py                the checks; return findings, never raise
+      findings.py              Finding + Level
+      backend_zarr.py          direct store reads, plus structural inspection
+      backend_climakitae.py    the delivered-product view
+      runner.py                audit / sweep / compare
+      reconcile.py             both surfaces judged against the documentation
+      report.py                summaries, markdown, HTML
+      cli.py                   python -m data_audit
+    data_quality/            the wind and humidity analysis
+      fetch_*.py               pull raw data from source (network-bound)
+      derive_*.py, humidity.py compute what the sources do not ship
+      localdata.py             the only module that knows the on-disk layout
+      grids.py, metrics.py     regridding, binning, comparison statistics
+      build_*.py               headless resumable pipelines
+      ae_era5_comparison.py    the wind comparison
+      rh_analysis.py           the humidity comparison
+      hdp_stations.py          station retrieval, QC, station store
   scripts/
-    run_audit.sh           the full staged run
-    audit_docs.py          type-hint and docstring coverage
-  tests/test_checks.py     88 tests
-  notebooks/               exploratory walkthrough
+    run_audit.sh             the full staged audit
+    audit_docs.py            type-hint and docstring coverage
+  tests/test_checks.py       88 tests (audit)
+  notebooks/
+    wind_speed_review.ipynb        the wind analysis
+    data_audit_walkthrough.ipynb   audit walkthrough
 ```
 
 ## Tuning
@@ -184,6 +220,59 @@ them before relying on the findings they produce:
   the day, with `TIME_BOUND_TOLERANCE_DAYS` of slack.
 - `EXPECTED_TIME_RANGE` — the older year-granularity check, kept alongside it
   for the coarse case.
+
+---
+
+# data_quality (analysis)
+
+Datasets live in a Zarr store, by default `s3://cadcat-tmp/data_quality`. The
+pipeline builds it; the review notebooks only read it.
+
+```bash
+python -m data_quality.build_datasets --list       # stages and outputs
+python -m data_quality.build_datasets --dry-run    # plan without writing
+python -m data_quality.build_datasets --dest /tmp/out   # local rehearsal
+python -m data_quality.build_datasets              # everything, resumable
+```
+
+Stages skip when their outputs exist, so an interrupted run resumes. Optional
+stages must be named:
+
+```bash
+python -m data_quality.build_datasets --stages conus404 --c404-years 1980-01-01 2010-12-31
+python -m data_quality.build_datasets --stages remetrics --overwrite
+```
+
+Console scripts: `dq-build-datasets`, `dq-build-metrics`, `dq-verify`.
+
+`notebooks/wind_speed_review.ipynb` reads the built store and regenerates the
+figures. It imports the package rather than manipulating `sys.path`, so install
+first.
+
+### Notes worth knowing
+
+- **ERA5 must be read from the `temporal` zarr group**, not `spatial`. The
+  spatial layout stores one global map per hour and is ~40x slower for a
+  regional multi-decade query.
+- **Wind speed is formed hourly, then averaged.** Averaging the *components*
+  first gives the vector mean, ~20% lower in this domain. Applies to ERA5 and
+  CONUS404, neither of which ships a speed variable.
+- **Relative humidity is computed over liquid water at all temperatures**, the
+  WMO surface convention. An ice-based formula reports up to 10% higher RH at
+  -20 C; mixing conventions puts a spurious cold-season bias into every
+  comparison. See `data_quality.humidity`.
+- **`flox` is effectively required.** Without it xarray's groupby falls back to
+  a Python loop and binning takes minutes instead of seconds.
+- **Free-running vs ERA5-driven** determines which metrics are valid.
+  Same-timestep correlation is meaningful only for the ERA5-driven runs; for
+  GCM-driven products it compares unrelated weather.
+- **HDP standardises stations to a 10 m anemometer**, matching ERA5 `u10` and
+  the AE variables. Siting is *not* standardised and matters a great deal.
+
+`arraylake` needs a login for the ERA5 store, and AWS credentials are needed for
+`cadcat-tmp`. Neither is in this repo. The audit needs neither.
+
+---
 
 ## Development
 
