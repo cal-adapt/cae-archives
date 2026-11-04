@@ -45,7 +45,7 @@ guidance-website/
 | `run_event.sh` | `--new heat\|precip` creates a post folder |
 | `configs/crai_base.yaml` | `source: local` (build from `crai_seed/`) or `source: s3` (real refresh from S3) |
 | `configs/heat_sacramento_2020.yaml`, `configs/precip_sacramento_2021.yaml` | Worked example event configs. `--new` copies one into the post |
-| `configs/sac_zipcodes.zip` | Sacramento zip codes used by both worked examples — `--new` copies it into the post |
+| `configs/sac_zipcodes.zip` | Sacramento zip codes used by both worked examples — `--new` copies it into the post. Replace this with a zipcode file of your desired area. |
 | `tests/` | Tests to confirm accuracy and runnability of helper functions |
 | `crai_seed/` | Snapshot CRAI inputs + the Cal-CRAI metric list (`cava_calcrai_metrics.csv`) |
 | `crai_cache/` | Statewide CRAI tables, built automatically from `crai_seed/` on the first run (git-ignored) |
