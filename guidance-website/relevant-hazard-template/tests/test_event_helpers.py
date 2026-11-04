@@ -250,3 +250,21 @@ def test_check_record_covers():
         eh.check_record_covers(daily, [["2021-08-14", "2021-08-18"]], "KTST")   # after record ends
     with pytest.raises(ValueError, match="no data"):
         eh.check_record_covers(daily, [["2020-08-20", "2020-08-21"]], "KTST")   # all-missing window
+
+
+@pytest.mark.parametrize("hazard, window, ok", [
+    ("precip", ["2021-10-23", "2021-10-26"], True),
+    ("precip", ["2021-12-30", "2022-01-02"], True),    # storm over New Year
+    ("heat", ["2021-12-30", "2022-01-02"], False),     # heat reads days in event.year only
+    ("precip", ["2020-10-23", "2020-10-26"], False),   # wrong year
+    ("precip", ["2021-10-26", "2021-10-23"], False),   # ends before it starts
+    ("precip", ["2021-10-23", "not a date"], False),
+])
+def test_event_config_window_validation(tmp_path, hazard, window, ok):
+    raw = minimal_config()
+    raw["hazard"], raw["event"]["windows"] = hazard, [window]
+    if ok:
+        eh.EventConfig(raw, str(tmp_path / "event_config.yaml"))
+    else:
+        with pytest.raises(ValueError, match="event.windows"):
+            eh.EventConfig(raw, str(tmp_path / "event_config.yaml"))

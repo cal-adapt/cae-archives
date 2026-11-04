@@ -86,6 +86,16 @@ class EventConfig:
 
         self.event_year = req("event", "year")
         self.event_windows = [tuple(w) for w in req("event", "windows")]
+        for w in self.event_windows:
+            try:
+                start, end = (pd.Timestamp(d) for d in w)
+            except (TypeError, ValueError):
+                raise ValueError(f"event.windows entry {list(w)} must be a [start, end] pair of dates")
+            if end < start:
+                raise ValueError(f"event.windows entry {list(w)} ends before it starts")
+            # Part 1 reads the event from event.year (heat: only days in that year)
+            if start.year != self.event_year or (self.hazard == "heat" and end.year != self.event_year):
+                raise ValueError(f"event.windows entry {list(w)} is outside event.year {self.event_year}")
 
         # Hazard-specific — each hazard notebook validates its own keys.
         self.thresholds = req("thresholds")

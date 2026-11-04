@@ -135,8 +135,8 @@ Go through `_analysis/event_config.yaml` top to bottom. The worked example it wa
   z[["ZIP5", "PO_NAME", "geometry"]].to_file("my_zipcodes.zip", driver="ESRI Shapefile")
   ```
   The maps cover the census tracts whose center falls inside these zip codes.
-- **`event.year`, `event.windows`**: the event year and a `[start, end]` pair per
-  heat wave or storm (both dates included).
+- **`event.year`, `event.windows`**: the event year and a `[start, end]` pair per heat wave or storm (both dates included). Each window must start in `event.year`
+  (heat: end in it too); the config won't load otherwise.
 - **Thresholds**: what counts as an event at this place (see "Config files" below for each setting). Run Part 1 first with a first guess. It prints the station's record dates. Check that they cover your event's dates and each window's peak values (heat: peak max temperature and the number of days and nights past the thresholds; precip: total, max 1-day and max N-day rainfall). Adjust the thresholds, then Run All.
 
   If the station has no data for an event window (the record starts after it, ends before it, or has a gap over it), Part 1 stops with an error. If only some days in a window are missing, it prints a warning listing them and keeps going. To fix either, pick another station: try the other `network_id`, a nearby airport's `station_label`, or leave `station_label` empty to use the longest record in `clip`. Then rerun Part 1.
