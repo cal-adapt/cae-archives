@@ -1,0 +1,265 @@
+---
+title: "TODO: The <YEAR> <PLACE> Heat Wave: What Happened and What the Future Holds"
+author:
+  - "TODO"
+date: "TODO: YYYY-MM-DD"
+description: "TODO: one-sentence hook. *Here’s what the data says.*"
+categories: [Science]
+citation: true
+draft: true   # remove when the post is ready to appear in the blog listing
+format:
+  html:
+    toc-depth: 3
+  pdf: default
+---
+
+<!--
+Post template for heat_event.ipynb
+(cae-archives/guidance-website/relevant-hazard-template/heat_index_template.qmd).
+`run_event.sh <post> --new heat` copies it into cae-archives/guidance-website/blog/<post>/
+as index.qmd. Running <post>/_analysis/heat_event.ipynb writes the figures into
+<post>/figures/, where every figure below already points. Fill in the TODO prose,
+captions, and numbers (from the notebook's printed output), then copy the whole post
+folder into cal-adapt-guidance/blog/posts/ (Quarto ignores _analysis/).
+-->
+
+TODO: opening narrative — what happened, when, who was affected.
+
+---
+
+### About This Analysis
+
+This analysis was produced by the Cal-Adapt Team, led by [Eagle Rock Analytics](https://eaglerockanalytics.com), a climate data and analytics firm based in Sacramento. Cal-Adapt builds tools and pipelines that help California utilities, planners, and public agencies understand how climate hazards are changing, and what that means for the communities they serve.
+
+When an extreme event like this occurs, we think it's worth going beyond the headlines: not just describing what happened but grounding it in data. The analysis draws on publicly available climate datasets, including gridded historical observations and downscaled future projections hosted by [Cal-Adapt.org](https://cal-adapt.org/).
+
+Disclaimer: This post is intended for informational and educational purposes to illustrate historical and projected climate hazards. It is not a comprehensive assessment, or a substitute for any hazard mitigation planning. To see the site's full disclaimer on how to interpret and apply this material, please review our **[full disclaimer](/about/our-project#disclaimer) for more information.**
+
+---
+
+### 3 Key Messages
+
+::: {.callout-important}
+**TODO: how exceptional the event was historically.**
+:::
+
+::: {.callout-warning}
+**TODO: how its frequency changes with warming** (@fig-return-period).
+:::
+
+::: {.callout-tip}
+**TODO: what can be done.**
+:::
+
+---
+
+### How Was This Event Defined?
+
+TODO: source of the definition.
+
+- **Duration:** TODO (`thresholds.consecutive_days` days in a row)
+- **Daytime threshold:** Maximum temperature above **TODO°F** (`thresholds.tmax_f`)
+- **Nighttime threshold:** Minimum temperature at or above **TODO°F** (`thresholds.tmin_f`)
+- **Spatial extent:** TODO, anchored to TODO (station ID `TODO`)
+
+---
+
+### How Bad Was This Event, Historically?
+
+#### **Where TODO:YEAR Ranks**
+
+@fig-annual-anomaly shows the annual mean temperature anomaly at the TODO weather station. TODO.
+
+::: {#fig-annual-anomaly}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_annual_anomaly.html >}}
+</div>
+```
+![](figures/static/fig_annual_anomaly.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_annual_anomaly.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_annual_anomaly.png){fig-alt="TODO"}
+:::
+*TODO caption. Data: Historical Data Platform (HDP).*
+:::
+
+#### **A closer look at the heat wave**
+
+@fig-daily-temp shows daily maximum (red) and minimum (blue) temperatures for every 5 years on record. TODO.
+
+::: {#fig-daily-temp}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_daily_temp_by_year.html >}}
+</div>
+```
+![](figures/static/fig_daily_temp_by_year.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_daily_temp_by_year.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_daily_temp_by_year.png){fig-alt="TODO"}
+:::
+*TODO caption. Data: Historical Data Platform (HDP).*
+:::
+
+---
+
+### How frequently has this event occurred in the past and how will that change under a warming climate?
+
+Next, we’ll take a look at the projections data in terms of their **[return period](/glossary/index.qmd#return-period)**, which is a common way to express the frequency of extreme events. Here, we define the return period as the average time between events of a given magnitude.
+
+::: {#fig-return-period}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_return_period_by_gwl.html >}}
+</div>
+```
+![](figures/static/fig_return_period_by_gwl.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_return_period_by_gwl.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_return_period_by_gwl.png){fig-alt="TODO"}
+:::
+*TODO caption. A shorter return period means the event becomes more frequent. Data: WRF UCLA.*
+:::
+
+TODO: 1-in-X years at each warming level (printed under the Part 3 figure in the notebook).
+
+::: {.callout-note appearance="minimal"}
+**In plain language:** TODO
+:::
+
+---
+
+### Impacts of Extreme Heat on People and Infrastructure
+
+TODO
+
+---
+
+### Understanding the Spatial Distribution of Heat Risk and Equity Vulnerabilities
+
+Below, in @fig-hot-days-hot-nights, we’ve mapped the projected number of extreme heat days across TODO census tracts at each warming level, bounded by zip codes for readability.
+
+::: {#fig-hot-days-hot-nights}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_hot_days_hot_nights_by_gwl.html >}}
+</div>
+```
+![](figures/static/fig_hot_days_hot_nights_by_gwl.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_hot_days_hot_nights_by_gwl.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_hot_days_hot_nights_by_gwl.png){fig-alt="TODO"}
+:::
+*TODO caption. Use the tabs to toggle between warming levels.*
+:::
+
+::: {#fig-heatwave-events}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_heatwave_events_by_gwl.html >}}
+</div>
+```
+![](figures/static/fig_heatwave_events_by_gwl.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_heatwave_events_by_gwl.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_heatwave_events_by_gwl.png){fig-alt="TODO"}
+:::
+*TODO caption. Use the tabs to toggle between warming levels.*
+:::
+
+In order to explore how this hazard intersects with existing vulnerabilities, we’ll look at the California Climate Risk and Adaptation Index (Cal-CRAI). The Cal-CRAI uses a combination of climate hazard and social vulnerability metrics to assess the relative risk of climate impacts across communities. For more information, check out the [Cal-CRAI documentation](https://zenodo.org/records/13840187).
+
+Below, in @fig-hot-days-hot-nights-delta, we’ve used the Cal-CRAI index to map the change in heat hazard score across TODO census tracts relative to the historical baseline. Red indicates an increase in projected heat risk for that community, blue indicates a decrease.
+
+::: {#fig-hot-days-hot-nights-delta}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_hot_days_hot_nights_delta_by_gwl.html >}}
+</div>
+```
+![](figures/static/fig_hot_days_hot_nights_delta_by_gwl.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_hot_days_hot_nights_delta_by_gwl.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_hot_days_hot_nights_delta_by_gwl.png){fig-alt="TODO"}
+:::
+*TODO caption. Red indicates an increase in projected heat hazard; blue indicates a decrease. Use the tabs to toggle between warming levels.*
+:::
+
+::: {#fig-heatwave-events-delta}
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="figure-container d-none d-md-block">
+{{< include figures/html/fig_heatwave_events_delta_by_gwl.html >}}
+</div>
+```
+![](figures/static/fig_heatwave_events_delta_by_gwl.png){.d-md-none fig-alt="TODO"}
+:::
+::: {.content-visible when-format="pdf"}
+![](figures/static/fig_heatwave_events_delta_by_gwl.png){fig-alt="TODO"}
+:::
+::: {.content-visible when-format="docx"}
+![](figures/static/fig_heatwave_events_delta_by_gwl.png){fig-alt="TODO"}
+:::
+*TODO caption. Red indicates an increase in projected heat hazard; blue indicates a decrease. Use the tabs to toggle between warming levels.*
+:::
+
+TODO: analysis of the maps.
+
+---
+
+### Cooling Solutions To Address A Changing Climate
+
+TODO
+
+---
+
+### What Can I Do About Extreme Heat Waves in My Area?
+
+TODO
+
+[Explore your county's climate adaptation actions →](https://resilientca.org/rap-map/)
+
+---
+
+### Data & Tools Used in This Analysis
+
+#### **Data**
+- **Weather station data:** Historical Data Platform (HDP), TODO (station ID `TODO`), accessed via [Cal-Adapt Analytics Engine](https://analytics.cal-adapt.org)
+- **Climate model projections:** WRF dynamically-downscaled projections (UCLA, SSP3-7.0, 3 km resolution, d03 grid), accessed via Cal-Adapt Analytics Engine
+- **Climate risk data layers:** Ford, V., Espinoza, J., & McClenny, B. (2024). [California Climate Risk and Adaptation Index Metric Files and Metadata, v1](https://zenodo.org/records/13840187) [Data set]. Eagle Rock Analytics.
+
+#### **Tools**
+This analysis was built using [`climakitae`](https://github.com/cal-adapt/climakitae), Cal-Adapt's open-source Python library for climate data access and analysis.
+
+Explore the climate projections for your own area at [cal-adapt.org](https://cal-adapt.org). For tools focused specifically on extreme heat, see [our extreme heat tool](https://cal-adapt.org/dashboard/climate-metrics-map?metric=extreme-heat) on [cal-adapt.org](https://cal-adapt.org).
+
+---
+
+### Get In Touch
+
+TODO
