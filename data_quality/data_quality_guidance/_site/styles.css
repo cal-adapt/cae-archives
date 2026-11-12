@@ -1,0 +1,68 @@
+/* Figure frames ------------------------------------------------------------
+   Each figure is an iframe holding a Plotly export. The export already carries
+   the height the notebook gave it (`style(pf, height=...)`), and is responsive
+   in width -- so the frame needs a height and nothing else.
+
+   That height lives in the GENERATED figures/heights.css, read back from the
+   exports themselves. The .qmd names the figure and carries no geometry:
+
+       <div class="fig-frame" data-fig="dist_daily_stations">
+         <iframe src="../figures/html/dist_daily_stations.html"
+                 loading="lazy" scrolling="no"></iframe>
+       </div>
+
+   No aspect ratios to maintain, no per-figure markup, and no scrollbars,
+   because the frame is exactly as tall as the figure asked to be.             */
+
+.fig-frame {
+  width: 100%;
+  margin: 0;
+  background: #fff;
+  overflow: hidden;
+  /* Fallback for a figure with no rule in heights.css. Matches the notebook's
+     `style()` default so an unlisted figure is merely unstyled, not broken.   */
+  height: 466px;
+}
+
+.fig-frame > iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Wide figures break out past the text column via Quarto's .column-page and
+   .column-page-inset, applied per figure in the .qmd. A three-panel figure gets
+   ~280px per panel in the default column and ~400px at .column-page -- the
+   difference between an axis label being readable and not.
+
+   Capped, so that on a very wide monitor a figure does not stretch so far that
+   its caption loses contact with the argument.                                */
+.column-page .fig-frame,
+.column-page-inset .fig-frame {
+  max-width: 1500px;
+  margin-inline: auto;
+}
+
+/* On a phone the content column is far narrower than these figures were laid
+   out for, so a wide multi-panel figure would be squeezed to illegibility. Let
+   it scroll sideways instead; the height is unaffected.                       */
+@media (max-width: 768px) {
+  .quarto-figure:has(.fig-frame),
+  figure:has(.fig-frame) {
+    overflow-x: auto;
+  }
+  .fig-frame {
+    min-width: 680px;
+  }
+}
+
+/* Captions: smaller and muted, so a three-line caption does not compete with
+   the body text it supports.                                                  */
+.quarto-figure figcaption,
+figure figcaption {
+  font-size: 0.88rem;
+  color: #56616b;
+  line-height: 1.45;
+  margin-top: 0.6rem;
+}

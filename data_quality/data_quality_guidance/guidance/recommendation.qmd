@@ -2,9 +2,10 @@
 title: "Recommendation Matrix"
 subtitle: "Good-for · use-with-caution · not-recommended, per variable × use case"
 date: last-modified
+jupyter: climakitae
 ---
 
-This matrix renders from `data/recommendation_matrix.csv`. To update the results and veredicts, we need to 
+This matrix renders from `data/recommendation.csv`. To update the results and veredicts, we need to 
 update the edit that file and re-render to update the table.
 
 ::: {.callout-note appearance="simple"}

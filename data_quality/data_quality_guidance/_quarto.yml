@@ -29,8 +29,8 @@ website:
         menu:
           - href: variables/wind-speed.qmd
             text: Wind speed
-          - href: variables/relative-humidity.qmd
-            text: Relative humidity
+          # - href: variables/relative-humidity.qmd
+          #   text: Relative humidity
       - text: Guidance
         menu:
           - href: guidance/recommendation.qmd

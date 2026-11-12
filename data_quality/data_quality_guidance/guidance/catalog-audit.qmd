@@ -2,6 +2,7 @@
 title: "Catalog audit"
 subtitle: "Metadata quality of the cadcat archive, checked through two independent access paths"
 date: last-modified
+jupyter: climakitae
 ---
 
 **Purpose.** Characterize the `cadcat` archive itself, not what the data say,

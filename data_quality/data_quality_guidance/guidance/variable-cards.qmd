@@ -2,6 +2,7 @@
 title: "Variable Cards"
 subtitle: "One card per variable, indexed by the name the user actually has in hand"
 date: last-modified
+jupyter: climakitae
 ---
 
 Each card answers, for one variable: what it is, where it came from, what it is good and bad for,

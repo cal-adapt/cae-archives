@@ -4,7 +4,7 @@ subtitle: "Applied to every variable"
 date: last-modified
 ---
 
-**Purpose.** Fix the boundaries and the method before characterization starts, so
+**Purpose.** Set the boundaries and the method before characterization starts, so
 results are comparable across variables and the work is repeatable. Items marked
 **[CONFIRM in review]** / **[FILL]** are decisions for the science team; everything else is
 drawn from the lit-review database and flagged with source IDs.
@@ -16,7 +16,7 @@ drawn from the lit-review database and flagged with source IDs.
 The two downscaling paths treat most variables **fundamentally differently**, and
 the difference is the single most useful thing to know about them.
 
-- **WRF (WUS-D03), 3 km CA convection-permitting** : the dynamical path, and the
+- **WRF 3 km CA convection-permitting (d03)** : the dynamical path, and the
   one that physically *simulates* the atmosphere. Native hourly output; resolves
   terrain-driven and mesoscale flow.
   *([R12](../references.qmd#R12), [R19](../references.qmd#R19); [R04](../references.qmd#R04) validation.)*
@@ -36,9 +36,8 @@ downscaled in LOCA2 the way temperature and precipitation are
 
 ## 2. Extent
 
-- **Spatial:** California 3 km domain (d03); IOU service territories as priority
-  sub-regions. **[CONFIRM with review]**
-- **Temporal:** 1980–2100; SSP3-7.0 primary. **[CONFIRM with review]**
+- **Spatial:** California 3 km domain (d03).
+- **Temporal:** 1980–2100; SSP3-7.0 (other SSPs?) **[CONFIRM with review]**.
 - **Vertical:** surface. 
 ---
 

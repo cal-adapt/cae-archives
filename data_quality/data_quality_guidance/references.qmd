@@ -2,6 +2,7 @@
 title: "References"
 subtitle: "Lit-review sources (R##, Q##) and open questions (DQ##) behind every evidence ID"
 date: last-modified
+jupyter: climakitae
 ---
 
 Every `R##` / `Q##` / `DQ##` citation used across this site is exported from the internal
