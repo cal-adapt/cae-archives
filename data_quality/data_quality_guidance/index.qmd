@@ -4,8 +4,7 @@ subtitle: "What the Cal-Adapt downscaled data is, how good it is, and what it ca
 date: last-modified
 ---
 
-This site characterizes the Cal-Adapt Analytics Engine downscaled climate data —
-**WRF** (dynamical) and **LOCA2** (statistical/hybrid) — variable by variable, and
+This site characterizes the Cal-Adapt Analytics Engine downscaled climate data (**WRF** and **LOCA2**) variable by variable, and
 states plainly what each is good for.
 
 It is produced by the **Data Quality & Documentation Pillar**, and its guiding
@@ -14,7 +13,7 @@ principle is:
 ::: {.callout-note appearance="simple"}
 **Document, don't fix.** This pillar characterizes the data and discloses what is
 known. Where a question is open, the deliverable is a clear statement of the issue
-and its likely cause — *not* its resolution.
+and its likely cause, *not* its resolution.
 :::
 
 ---
@@ -36,30 +35,27 @@ characterizes the archive's **metadata**: 1,961 findings across 390 datasets,
 
 ## How to use this site
 
-**If you want a verdict for your use case** → the
-[good/bad matrix](guidance/good-bad-matrix.qmd). Good-for, use-with-caution, or
+**If you want a recommendation for an specific case** → the
+[recommendation matrix](guidance/recommendation.qmd). Good-for, use-with-caution, or
 not-recommended, per variable × use case, with the evidence behind each.
 
 **If you have a variable name in hand and want to know what it is** → the
 [variable cards](guidance/variable-cards.qmd). One card per variable: definition,
 source, transformations, known issues.
 
-**If you want to know what happened to the number before it reached you** → the
+**If you want to know what happened to a variable before it reached you** → the
 [provenance flowchart](method/provenance.qmd). The plain-language path from global
 model to delivered value, with the known gaps marked.
 
 **If you want to know whether the catalog itself is sound** → the
 [catalog audit](guidance/catalog-audit.qmd). Metadata quality across the whole
-`cadcat` archive, checked through two independent access paths — because a
+`cadcat` archive, checked through two independent access paths, because a
 requirement can fail in the published store and pass in what users receive, or
 the reverse.
 
-**If you want the evidence** → the per-variable characterization pages linked
-above, and the [references](references.qmd).
-
 ---
 
-## The method in one page
+<!-- ## The method in one page
 
 Every variable is characterized the same way, so results are comparable across
 variables and the work is repeatable. Full detail in
@@ -70,12 +66,12 @@ variables and the work is repeatable. Full detail in
 Each variable is scored on all six, against the reference that can actually
 adjudicate it:
 
-1. **Mean bias** — is the level right?
-2. **Spatial pattern fidelity** — are the maxima in the right places?
-3. **Response to terrain** — does the product resolve what its resolution implies?
-4. **Diurnal and seasonal structure** — is the timing right?
-5. **Extremes and distribution shape** — is the *shape* right, not just the mean?
-6. **Inter-variable consistency** — is it coherent with the other variables an
+1. **Mean bias**: is the level right?
+2. **Spatial pattern fidelity**: are the maxima in the right places?
+3. **Response to terrain**: does the product resolve what its resolution implies?
+4. **Diurnal and seasonal structure**: is the timing right?
+5. **Extremes and distribution shape**: is the *shape* right, not just the mean?
+6. **Inter-variable consistency**: is it coherent with the other variables an
    index needs?
 
 ### Three references, ordered by what each can settle
@@ -112,4 +108,4 @@ covering the six dimensions; matrix rows, filled and IOU-vetted; and a variable
 card. Then the template is stamped onto the next variable.
 
 *Source of record for evidence IDs (R##/Q##/DQ##) is the internal lit-review
-database — see [References](references.qmd).*
+database — see [References](references.qmd).* -->
