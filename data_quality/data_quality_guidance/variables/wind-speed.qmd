@@ -7,7 +7,7 @@ date: last-modified
 **Purpose.** Characterize Cal-Adapt Analytics Engine 10 m wind speed
 (`wspeed` / `wspd10mean`), 1980–2014, against the quality dimensions fixed in
 [Scope & Definitions](../method/scope-and-definitions.qmd). Findings derived here
-feed the [good/bad matrix](../guidance/good-bad-matrix.qmd).
+feed the [good/bad matrix](../guidance/recommendation.qmd).
 
 Evaluated against **station observations** from
 [HDP](https://github.com/Eagle-Rock-Analytics/historical-obs-platform) first, then

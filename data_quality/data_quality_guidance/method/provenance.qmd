@@ -99,7 +99,7 @@ flowchart TD
   data-quality finding.
 - **LOCA2 wind parity ([R02](../references.qmd#R02)).** The hybrid path produces a wind field, but wind is not
   statistically downscaled the way temperature and precipitation are. This becomes the
-  "use-with-caution" basis for every LOCA2 wind row in the [matrix](../guidance/good-bad-matrix.qmd).
+  "use-with-caution" basis for every LOCA2 wind row in the [matrix](../guidance/recommendation.qmd).
 - **The `wspeed` discrepancy ([DQ4](../references.qmd#DQ4)).** `wspeed` does not reconcile with the components in the
   LOCA2 hybrid files. Wind speed is downscaled independently 
   rather than derived from the components. `wspeed`

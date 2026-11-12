@@ -60,6 +60,9 @@ format:
     # forcing each one to scroll.
     page-layout: article
     fig-cap-location: bottom
+  docx:
+    toc: true
+    number-sections: true
 
 execute:
   echo: false

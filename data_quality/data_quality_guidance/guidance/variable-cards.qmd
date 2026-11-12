@@ -7,7 +7,7 @@ jupyter: climakitae
 
 Each card answers, for one variable: what it is, where it came from, what it is good and bad for,
 and what known issues apply. Cards are generated from `data/variables.yml`; the use-case verdicts
-read live from the [good/bad matrix](good-bad-matrix.qmd), and every `R##` / `Q##` / `DQ##` links
+read live from the [recommendation matrix](recommendation.qmd), and every `R##` / `Q##` / `DQ##` links
 to its entry on the [References](../references.qmd) page. Add a variable by adding one YAML entry.
 
 ```{python}
@@ -20,7 +20,7 @@ with open("../data/variables.yml") as f:
     variables = yaml.safe_load(f)
 
 try:
-    matrix = pd.read_csv("../data/goodbad_matrix.csv").fillna("")
+    matrix = pd.read_csv("../data/recommendation.csv").fillna("")
 except Exception:
     matrix = pd.DataFrame()
 
@@ -56,7 +56,7 @@ CALLOUT = {"resolved": "callout-tip", "open": "callout-warning", "caution": "cal
 BADGE = {"resolved": "resolved", "open": "OPEN", "caution": "caution"}
 
 for var in variables:
-    print(f"## `{var['id']}` — {var.get('name','')}\n")
+    print(f"## `{var['id']}` : {var.get('name','')}\n")
 
     print('::: {.callout-note appearance="simple"}')
     print(f"**Definition.** {linkify(var['definition'])}")
@@ -77,18 +77,18 @@ for var in variables:
     if not matrix.empty and var.get("matrix_filter"):
         sub = matrix[matrix["Variable"].str.contains(var["matrix_filter"], case=False, na=False)]
         if len(sub):
-            print("**Use-case verdicts** (live from the [matrix](good-bad-matrix.qmd)):\n")
-            print("| Use case | Region / terrain | Verdict |")
+            print("**Use-case verdicts** (live from the [recommendation matrix](../guidance/recommendation.qmd)):\n")
+            print("| Use case | Region / terrain | Confidence |")
             print("|---|---|---|")
             for _, r in sub.iterrows():
-                print(f"| {r['Use case']} | {r['Region / terrain']} | {chip(r['Verdict'])} |")
+                print(f"| {r['Use case']} | {r['Region / terrain']} | {chip(r['Confidence'])} |")
             print()
 
     for iss in var.get("known_issues", []):
         cls = CALLOUT.get(iss.get("severity", ""), "callout-warning")
         badge = BADGE.get(iss.get("severity", ""), iss.get("severity", ""))
         print(f'::: {{.{cls} appearance="simple"}}')
-        print(f"**Known issue — {iss.get('id','')} ({badge}).** {linkify(iss['text'])}")
+        print(f"**Known issue: {iss.get('id','')} ({badge}).** {linkify(iss['text'])}")
         print(":::\n")
 
     foot = []

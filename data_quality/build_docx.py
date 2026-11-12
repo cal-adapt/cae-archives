@@ -12,8 +12,8 @@ PAGES = [
     ("method/provenance.html", "Method — Provenance"),
     ("method/extending.html", "Method — Extending to a new variable"),
     ("variables/wind-speed.html", "Variable — Wind speed"),
-    ("variables/relative-humidity.html", "Variable — Relative humidity"),
-    ("guidance/good-bad-matrix.html", "Guidance — Good / Bad Matrix"),
+#    ("variables/relative-humidity.html", "Variable — Relative humidity"),
+    ("guidance/recommendation.html", "Guidance — Recommendation"),
     ("guidance/variable-cards.html", "Guidance — Variable Cards"),
     ("guidance/catalog-audit.html", "Guidance — Catalog Audit"),
     ("references.html", "References"),
@@ -59,7 +59,12 @@ for rel, _label in PAGES:
             img["style"] = "width:100%;"
             pre.replace_with(img)
         else:
-            pre.decompose()
+            note = soup.new_tag("p")
+            em = soup.new_tag("em")
+            em.string = ("[Provenance flowchart not rendered \u2014 mermaid-cli (mmdc) was not "
+                         "found and no fallback provenance.png was supplied. Install mmdc or place "
+                         "provenance.png next to the script.]")
+            note.append(em); pre.replace_with(note)
 
     # drop any leftover bare iframes
     for ifr in main.select("iframe"):

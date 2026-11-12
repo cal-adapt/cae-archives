@@ -5,11 +5,11 @@ date: last-modified
 jupyter: climakitae
 ---
 
-This matrix renders from `data/recommendation.csv`. To update the results and veredicts, we need to 
-update the edit that file and re-render to update the table.
+This matrix renders from `data/recommendation.csv`. To update the results and confidences, we need to 
+edit that file and re-render to update the table.
 
 ::: {.callout-note appearance="simple"}
-Verdicts are intentionally left **TBD**. I believe assigning them is the team's job, and no verdict
+Confidences are intentionally left **TBD**. I believe assigning them is the team's job, and no verdict
 stands without the *dimensions assessed* + *evidence* behind it.
 :::
 
